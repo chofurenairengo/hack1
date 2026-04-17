@@ -78,13 +78,13 @@ Python の `matching` ライブラリに依存せず、**Stable Marriage with In
 
 | テーブル | 主要カラム | 備考 |
 |---------|-----------|------|
-| Users | id, email, name, age, interests, area, icon_url, has_dating_experience | プロフィール情報と経験バッジ |
+| Users | id, email, name, age, interests, area, icon_url, has_dating_experience, **gender**, **preferred_genders** | gender/preferred_genders はマッチング用属性（後述） |
 | Events | id, title, date, status, host_id, **mode（online/offline）**, venue_id | mode によりハイブリッド切替 |
 | EventTickets | id, event_id, max_presenter, max_single, max_audience, price_per_tier | 枠3種類の管理 |
 | Participants | id, event_id, user_id, tier, status | tier: presenter / single / audience |
-| Pairs | id, event_id, pitcher_id, friend_id | 紹介者と被紹介者の組 |
+| Pairs | id, event_id, presenter_id, presented_user_id | 紹介者（presenter）と被紹介者の組 |
 | Slides | id, pair_id, template_id, content_json | Webコンポーネントとしてレンダリング |
-| Recommendations | id, event_id, pitcher_id, from_user_id, to_user_id | 紹介者の推薦フラグ（星マーク） |
+| Recommendations | id, event_id, presenter_id, from_user_id, to_user_id | 紹介者の推薦フラグ（星マーク） |
 | Votes | id, event_id, voter_id, round, choices_json | 各0〜3人の投票データ |
 | Matches | id, event_id, user_a_id, user_b_id, status | SMIアルゴリズムの結果 |
 
@@ -92,6 +92,18 @@ Python の `matching` ライブラリに依存せず、**Stable Marriage with In
 - **Recommendations は SMI の入力には使わない**（UI表示のみ）。Votes テーブルのみが入力
 - **Events.mode** で online / offline を切替、フロントの挙動を分岐
 - Row Level Security でイベント参加者以外はデータ参照不可
+
+### マッチング用属性（gender / preferred_genders）
+SMI の男女比均等化制約および相互希望のマッチングに使用するフィールド。LGBTQ+ 対応を前提に以下方針で扱う。
+
+| フィールド | 型 | 値の例 | 用途 |
+|-----------|----|------|------|
+| `users.gender` | enum | `female` / `male` / `non_binary` / `prefer_not_to_say` | 比率制約の対象カテゴリ（自己申告） |
+| `users.preferred_genders` | enum配列 | `['female']` / `['male','non_binary']` / `['any']` | マッチング希望の対象（複数選択可・`any` で制約なし） |
+
+- **未回答（`prefer_not_to_say`）の扱い**：均等化ハード制約の対象外とし、ソフト制約として余剰枠に割り当てる
+- **非二元（`non_binary`）の扱い**：`preferred_genders` で自分を望む相手のみとマッチング候補を構成。比率均等化は `female` / `male` の2カテゴリに対して適用し、`non_binary` は別プールで処理
+- **イベント単位のポリシー**：`Events` に `matching_policy`（将来拡張）を持たせ、「二元制約あり／制約なし」を切替可能にする設計余地を残す
 
 ---
 
