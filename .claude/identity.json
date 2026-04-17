@@ -1,0 +1,30 @@
+{
+  "name": "hack1-date-my-mate-jp",
+  "displayName": "Hack-1 グランプリ 2026 — Date My Mate JP",
+  "description": "友人紹介型マッチングイベントプラットフォーム。Move Hands. Move Hearts.",
+  "hackathon": {
+    "grandPrix": "Hack-1 2026",
+    "theme": "小さくなる日本",
+    "judgingConcept": "Move Hands. Move Hearts.",
+    "kickoff": "2026-04-12",
+    "midterm": "2026-04-25",
+    "finalOnline": "2026-05-09",
+    "finalOffline": "2026-05-10"
+  },
+  "primaryStack": {
+    "frontend": ["Next.js (App Router)", "React", "Tailwind CSS", "shadcn/ui", "framer-motion", "Zustand"],
+    "backend": ["Supabase (PostgreSQL)", "Supabase Realtime", "Row Level Security"],
+    "ai": ["OpenAI GPT-4o-mini (4-agent orchestration)"],
+    "matching": ["Python (SMI 自前実装 + 男女比均等化ハード制約)"],
+    "video": ["Daily.co", "LiveKit"]
+  },
+  "keyDocs": [
+    { "path": "docs/requirements.md", "title": "要件定義書" },
+    { "path": "docs/technical_spec.md", "title": "技術仕様書" }
+  ],
+  "technicalPillars": [
+    "SMI 自前実装と可視化 (Gale-Shapley 拡張 + Min-Regret Sum)",
+    "マルチエージェント AI スライド生成 (構成/コピー/批評/デザイナー)",
+    "堅牢性: offline-first + 動的リバランシング + 不完全データ耐性"
+  ]
+}

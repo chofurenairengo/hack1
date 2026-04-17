@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm ci)",
+      "Bash(npm run build)",
+      "Bash(npm run dev)",
+      "Bash(npm run lint*)",
+      "Bash(npm run test*)",
+      "Bash(npm test*)",
+      "Bash(pnpm install)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm run build)",
+      "Bash(pnpm run dev)",
+      "Bash(pnpm run lint*)",
+      "Bash(pnpm run test*)",
+      "Bash(pnpm test*)",
+      "Bash(npx create-next-app*)",
+      "Bash(npx shadcn*)",
+      "Bash(npx prisma *)",
+      "Bash(npx tsc*)",
+      "Bash(npx eslint*)",
+      "Bash(npx prettier*)",
+      "Bash(python -m pytest*)",
+      "Bash(pytest*)",
+      "Bash(ruff check*)",
+      "Bash(ruff format*)",
+      "Bash(mypy *)",
+      "Bash(supabase db diff*)",
+      "Bash(supabase db pull*)",
+      "Bash(supabase gen types*)",
+      "Bash(supabase start)",
+      "Bash(supabase stop)",
+      "Bash(supabase status)",
+      "Bash(supabase migration list*)",
+      "Bash(supabase migration new *)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr diff*)",
+      "Bash(gh issue view*)",
+      "Bash(gh issue list*)",
+      "Bash(gh search *)",
+      "Bash(gh api repos/*)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git branch)",
+      "Bash(git branch --list*)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)",
+      "Bash(rm -r *)",
+      "Bash(sudo *)",
+      "Bash(chmod 777 *)",
+      "Bash(chown -R *)",
+      "Bash(curl * | sh)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | sh)",
+      "Bash(wget * | bash)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push --force-with-lease*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -fd*)",
+      "Bash(git clean -fdx*)",
+      "Bash(git checkout -- *)",
+      "Bash(git checkout .)",
+      "Bash(git restore .)",
+      "Bash(git commit --amend*)",
+      "Bash(git rebase -i*)",
+      "Bash(git branch -D *)",
+      "Bash(git branch --delete --force*)",
+      "Bash(git filter-branch*)",
+      "Bash(git update-ref -d *)",
+      "Bash(supabase db reset*)",
+      "Bash(supabase db push*)",
+      "Bash(supabase link *)",
+      "Bash(psql * -c DROP *)",
+      "Bash(psql * -c TRUNCATE *)",
+      "Bash(psql * -c DELETE *)",
+      "Bash(npx rimraf*)",
+      "Bash(npx del-cli*)",
+      "Bash(pnpm exec rimraf*)",
+      "Bash(npm publish*)",
+      "Bash(pnpm publish*)",
+      "Bash(npm unpublish*)",
+      "Bash(mkfs*)",
+      "Bash(dd if=*)",
+      "Bash(:(){ :|:& };:)",
+      "Bash(shutdown*)",
+      "Bash(reboot*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "paths": ["**/algorithm/smi*.py", "**/matching/smi*.py"],
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/remind-smi-tests.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "paths": ["supabase/migrations/**", "**/schema.sql"],
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/remind-schema-docs.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
