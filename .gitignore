@@ -1,4 +1,25 @@
-node_modules
+# dependencies
+node_modules/
+
+# Next.js build output
 .next/
+out/
+
+# env files
 .env*
 !.env.example
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*
+
+# Vercel
+.vercel/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Claude Code
+.claude/
