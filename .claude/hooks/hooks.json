@@ -1,0 +1,31 @@
+{
+  "hooks": [
+    {
+      "matcher": "tool == \"Edit\" && tool_input.file_path matches \"\\\\.(ts|tsx)$\"",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "#!/bin/bash\necho '[tomokoi] TypeScript file edited — Phase 1 以降で pnpm typecheck を有効化予定' >&2"
+        }
+      ]
+    },
+    {
+      "matcher": "tool == \"Write\" && tool_input.file_path matches \"supabase/migrations/.*\\\\.sql$\"",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "#!/bin/bash\necho '[tomokoi] Supabase migration created — rls-auditor エージェントを proactive 起動してください' >&2"
+        }
+      ]
+    },
+    {
+      "matcher": "tool == \"Edit\" && tool_input.file_path matches \"src/(domain|infrastructure)/matching/.*\\\\.ts$\"",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "#!/bin/bash\necho '[tomokoi] Matching algorithm modified — matching-reviewer と /match-test を走らせてください' >&2"
+        }
+      ]
+    }
+  ]
+}
