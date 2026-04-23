@@ -12,6 +12,8 @@ create table public.matches (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint matches_no_self check (user_a_id != user_b_id),
+  -- canonical ordering: application must insert with user_a_id < user_b_id
+  constraint matches_canonical check (user_a_id < user_b_id),
   constraint matches_unique unique (event_id, user_a_id, user_b_id)
 );
 

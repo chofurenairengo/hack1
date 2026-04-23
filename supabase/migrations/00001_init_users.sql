@@ -53,6 +53,8 @@ create table public.friendships (
   status text not null check (status in ('pending', 'accepted', 'rejected')),
   created_at timestamptz not null default now(),
   constraint friendships_no_self check (requester_id != addressee_id),
+  -- canonical ordering: application must insert with requester_id < addressee_id
+  constraint friendships_canonical check (requester_id < addressee_id),
   constraint friendships_unique unique (requester_id, addressee_id)
 );
 

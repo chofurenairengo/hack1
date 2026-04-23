@@ -61,3 +61,8 @@ create table public.presentation_pairs (
 create index on public.presentation_pairs (event_id);
 
 alter table public.presentation_pairs enable row level security;
+
+-- Add FK from entries.pair_id now that presentation_pairs exists
+alter table public.entries
+  add constraint entries_pair_fk
+  foreign key (pair_id) references public.presentation_pairs(id) on delete set null;

@@ -2,27 +2,38 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   async headers() {
+    const commonSecurityHeaders = [
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      {
+        key: 'Content-Security-Policy-Report-Only',
+        value: [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' blob: data:",
+          "font-src 'self'",
+          "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+          "media-src 'self' blob:",
+          "worker-src 'self' blob:",
+        ].join('; '),
+      },
+    ];
     return [
       {
-        source: '/(.*)',
+        // Event pages require camera (VRM/MediaPipe) and microphone (WebRTC)
+        source: '/events/:path*',
         headers: [
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          ...commonSecurityHeaders,
+          { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self)' },
+        ],
+      },
+      {
+        source: '/((?!events).*)',
+        headers: [
+          ...commonSecurityHeaders,
           { key: 'Permissions-Policy', value: 'camera=(), microphone=()' },
-          {
-            key: 'Content-Security-Policy-Report-Only',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' blob: data:",
-              "font-src 'self'",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-              "media-src 'self' blob:",
-              "worker-src 'self' blob:",
-            ].join('; '),
-          },
         ],
       },
     ];

@@ -226,7 +226,7 @@ create policy "slide_decks_presenter_update"
 -- slide_images
 -- ============================================================
 
--- Same access as slide_decks (via deck)
+-- Pair members can always see; event participants can see approved decks only
 create policy "slide_images_deck_access_select"
   on public.slide_images for select to authenticated
   using (
@@ -234,8 +234,14 @@ create policy "slide_images_deck_access_select"
       select 1 from public.slide_decks sd
       join public.presentation_pairs pp on pp.id = sd.pair_id
       where sd.id = slide_images.deck_id
-        and (pp.presenter_id = auth.uid() or pp.introducee_id = auth.uid()
-             or sd.status = 'approved')
+        and (pp.presenter_id = auth.uid() or pp.introducee_id = auth.uid())
+    )
+    or exists (
+      select 1 from public.slide_decks sd
+      join public.entries e on e.event_id = sd.event_id
+      where sd.id = slide_images.deck_id
+        and sd.status = 'approved'
+        and e.user_id = auth.uid()
     )
   );
 

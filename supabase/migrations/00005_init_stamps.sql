@@ -7,8 +7,9 @@ create table public.stamps (
   event_id uuid not null references public.events(id) on delete cascade,
   kind text not null check (kind in ('handshake', 'sparkle', 'laugh', 'clap')),
   client_nonce text not null,
-  sent_at timestamptz not null default now()
+  sent_at timestamptz not null default now(),
   -- sender_id is intentionally omitted to preserve anonymity
+  constraint stamps_client_nonce_unique unique (event_id, client_nonce)
 );
 
 create index on public.stamps (event_id);
