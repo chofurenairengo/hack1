@@ -1,6 +1,12 @@
 ---
-description: "Supabase Realtime Broadcast + WebRTC の設計規約 — 4 チャンネル構成 / ビデオ OFF / offline-first / メンバー C 一元管理"
-globs: ["src/infrastructure/realtime/**/*", "src/infrastructure/webrtc/**/*", "src/stores/realtime/**/*", "src/components/features/event/**/*"]
+description: 'Supabase Realtime Broadcast + WebRTC の設計規約 — 4 チャンネル構成 / ビデオ OFF / offline-first / メンバー C 一元管理'
+globs:
+  [
+    'src/infrastructure/realtime/**/*',
+    'src/infrastructure/webrtc/**/*',
+    'src/stores/realtime/**/*',
+    'src/components/features/event/**/*',
+  ]
 alwaysApply: true
 ---
 
@@ -12,12 +18,12 @@ alwaysApply: true
 
 Supabase Realtime Broadcast を**イベントごとに 4 チャンネル**に分離する:
 
-| チャンネル | 用途 | Payload |
-|---|---|---|
-| `event:{eventId}:phase` | フェーズ遷移 (lobby / pitch / voting / mingling / epilogue) | `{ phase, startedAt, meta }` |
-| `event:{eventId}:slide` | スライド表示同期 (現在ページ / ハイライト) | `{ deckId, pageIndex, actorId }` |
-| `event:{eventId}:stamp` | スタンプ (匿名、送信者 ID を保存しない) | `{ kind, position, timestamp }` |
-| `event:{eventId}:avatar` | MediaPipe 表情 + 音声メタ (音声本体は WebRTC) | `{ userId, expression, mouthOpen }` |
+| チャンネル               | 用途                                                                                         | Payload                             |
+| ------------------------ | -------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `event:{eventId}:phase`  | フェーズ遷移 (pre_event / entry / presentation / voting / intermission / mingling / closing) | `{ phase, startedAt, meta }`        |
+| `event:{eventId}:slide`  | スライド表示同期 (現在ページ / ハイライト)                                                   | `{ deckId, pageIndex, actorId }`    |
+| `event:{eventId}:stamp`  | スタンプ (匿名、送信者 ID を保存しない)                                                      | `{ kind, position, timestamp }`     |
+| `event:{eventId}:avatar` | MediaPipe 表情 + 音声メタ (音声本体は WebRTC)                                                | `{ userId, expression, mouthOpen }` |
 
 - **ペイロードは zod スキーマで strict 検証**してから状態反映
 - スタンプは**送信者 ID を保存しない**、`stamps` テーブルにも記録しない (匿名性)
@@ -39,7 +45,7 @@ Supabase Realtime Broadcast を**イベントごとに 4 チャンネル**に分
 ## 状態機械 (Phase)
 
 ```
-lobby → pitch → voting → mingling → epilogue
+pre_event → entry → presentation → voting → intermission → mingling → closing
 ```
 
 - 遷移は主催者 (管理画面) からの Server Action 経由のみ
@@ -49,11 +55,13 @@ lobby → pitch → voting → mingling → epilogue
 ## React 層の利用規約
 
 C が提供する hooks / stores 以外で**直接 `supabase.channel(...)` を呼ばない**。越境すると以下が壊れる:
+
 - チャンネル重複購読
 - 状態の二重ソース
 - offline-first のキャッシュ整合性
 
 提供予定の API (C が作る):
+
 - `useEventPhase(eventId)` — 現在フェーズの取得 + 監視
 - `useSlideSync(eventId)` — スライドページ同期
 - `useStampBroadcast(eventId)` — スタンプ送受信

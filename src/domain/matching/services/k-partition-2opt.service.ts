@@ -1,4 +1,4 @@
-import type { EventId, UserId } from '@/shared/types/ids';
+import type { EventId, PairId, UserId } from '@/shared/types/ids';
 import type { VotePriority } from '@/domain/matching/value-objects/vote-priority.vo';
 import type { Gender } from '@/domain/user/value-objects/gender.vo';
 import type { TableAssignmentPlan } from '@/domain/matching/value-objects/table-assignment.plan';
@@ -14,7 +14,7 @@ export type VoteInput = Readonly<{
 export type ParticipantInput = Readonly<{
   userId: UserId;
   gender: Gender;
-  presenterPairId: string | null;
+  presenterPairId: PairId | null;
 }>;
 
 export type MatchingInput = Readonly<{

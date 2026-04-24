@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { asUserId } from '@/shared/types/ids';
 
 const weightSchema = z.number().min(0).max(1);
 
@@ -16,7 +17,7 @@ const WeightsSchema = z.object({
 });
 
 export const ExpressionPayloadSchema = z.object({
-  userId: z.string(),
+  userId: z.string().transform(asUserId),
   weights: WeightsSchema,
   lookAt: z.object({ x: z.number(), y: z.number() }).nullable(),
   ts: z.number(),

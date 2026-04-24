@@ -19,7 +19,7 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: '2.22.6'
 
       - name: Push migrations
         run: supabase db push --project-ref ${{ vars.SUPABASE_PROJECT_REF }}

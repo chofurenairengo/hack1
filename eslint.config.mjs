@@ -71,6 +71,13 @@ const eslintConfig = defineConfig([
     files: ['src/**/*.ts', 'src/**/*.tsx'],
     ignores: ['src/shared/config/env.ts'],
   },
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+    },
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
+  },
 ]);
 
 export default eslintConfig;
