@@ -19,6 +19,7 @@ pnpm build
 pnpm tsc --noEmit
 pnpm lint
 ```
+
 - [ ] `pnpm build` が通る
 - [ ] `tsc --noEmit` がエラーなし
 - [ ] `eslint` が警告のみ (エラーなし)
@@ -29,7 +30,7 @@ pnpm lint
 - [ ] `src/domain/matching/` `src/domain/vote/` `src/domain/slide/` `src/domain/match/` の空モジュール (scaffold)
 - [ ] `src/lib/supabase/client.ts` `src/lib/supabase/server.ts` `src/lib/supabase/service.ts` が存在し、`server.ts` と `service.ts` の先頭が `import "server-only"`
 
-### 3. クロスメンバー型契約 (A 管轄)
+### 3. クロスメンバー型契約 (B（PM）管轄)
 
 - [ ] `src/types/api.ts` が作成済みで以下を含む
   - `ActionResult<T>` 型

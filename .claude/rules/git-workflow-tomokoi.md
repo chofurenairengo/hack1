@@ -1,6 +1,6 @@
 ---
-description: "トモコイ Git ワークフロー — conventional commits / PR チェックリスト (RLS 同梱・クロスメンバー型合意・レーン遵守) / --no-verify 禁止"
-globs: [".github/**/*", "CONTRIBUTING.md", "docs/**/*"]
+description: 'トモコイ Git ワークフロー — conventional commits / PR チェックリスト (RLS 同梱・クロスメンバー型合意・レーン遵守) / --no-verify 禁止'
+globs: ['.github/**/*', 'CONTRIBUTING.md', 'docs/**/*']
 alwaysApply: true
 ---
 
@@ -33,18 +33,21 @@ Subject 行は 72 文字以内、日本語可 (プロジェクト内は日本語
 
 ```markdown
 ## 概要
+
 <変更の目的と要約>
 
 ## レーン
+
 - [ ] A (スライド・管理)
 - [ ] B (VRM)
 - [ ] C (Realtime/WebRTC)
 - [ ] D (投票・マッチング)
 
 ## チェックリスト
+
 - [ ] このレーン向けの rules (`.claude/rules/*.md`) を遵守している
 - [ ] 他レーン管轄のファイルを編集していない / 合意済み
-- [ ] クロスメンバー型 (`src/types/api.ts`, `src/types/db.ts`) を変更していない / A 合意済み
+- [ ] クロスメンバー型 (`src/types/api.ts`, `src/types/db.ts`) を変更していない / 変更する場合は影響レーンを PR に明記
 - [ ] Supabase migration に RLS ポリシーを同梱した (スキーマ変更時)
 - [ ] `src/types/supabase.ts` を再生成した (スキーマ変更時)
 - [ ] テストを追加した (unit + integration / E2E は該当時)
@@ -52,6 +55,7 @@ Subject 行は 72 文字以内、日本語可 (プロジェクト内は日本語
 - [ ] シークレットをコミットしていない
 
 ## テストプラン
+
 - [ ] <該当するテスト手順>
 ```
 
@@ -69,7 +73,7 @@ Subject 行は 72 文字以内、日本語可 (プロジェクト内は日本語
 
 - **レーン担当者 + 1 人**の 2-approve 必須
 - RLS を含む migration は**メンバー A の承認必須**
-- クロスメンバー型変更は**影響を受ける全レーンの承認必須**
+- クロスメンバー型変更は**影響を受ける全レーンに PR レビューを依頼する**
 
 ## 禁止事項
 
