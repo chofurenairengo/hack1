@@ -5,7 +5,14 @@ import nextTs from 'eslint-config-next/typescript';
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts', 'src/types/supabase.ts']),
+  globalIgnores([
+    '.next/**',
+    'out/**',
+    'build/**',
+    'coverage/**',
+    'next-env.d.ts',
+    'src/types/supabase.ts',
+  ]),
   {
     rules: {
       'no-restricted-imports': [
@@ -69,7 +76,7 @@ const eslintConfig = defineConfig([
       ],
     },
     files: ['src/**/*.ts', 'src/**/*.tsx'],
-    ignores: ['src/shared/config/env.ts'],
+    ignores: ['src/shared/config/env.ts', 'src/shared/config/env.server.ts'],
   },
   {
     rules: {

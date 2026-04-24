@@ -21,10 +21,11 @@ description: 大機能追加の全体フロー — planner → tdd-guide → cod
 ### Step 1: Planning (planner エージェント)
 
 `planner` エージェントを起動し、以下を含む実装計画を作成:
+
 - 対象レーン (A / B / C / D / 横断)
 - 影響する `src/` ディレクトリ / 新規作成ファイル
 - `supabase/migrations/` 追加の有無 (ある場合は `/database-migration` を後で呼ぶ)
-- クロスメンバー型 (`src/types/api.ts`) 変更の有無 (ある場合は A 合意が必要)
+- クロスメンバー型 (`src/types/api.ts`) 変更の有無（変更は仕様外のため要注意）
 - 既存ルール (`.claude/rules/*.md`) の関連項目
 - テスト計画 (unit / integration / E2E)
 - リスクと代替案
@@ -32,6 +33,7 @@ description: 大機能追加の全体フロー — planner → tdd-guide → cod
 ### Step 2: TDD (tdd-guide エージェント)
 
 `tdd-guide` エージェントで以下を実行:
+
 - テストファースト (RED): テストを書いて失敗させる
 - 最小実装 (GREEN): テストを通す最小コード
 - リファクタ (REFACTOR): 設計を整える
@@ -40,6 +42,7 @@ description: 大機能追加の全体フロー — planner → tdd-guide → cod
 ### Step 3: Code Review (code-reviewer エージェント)
 
 `code-reviewer` を起動し、以下を確認:
+
 - `.claude/rules/` の関連ルール遵守
 - イミュータブル / 型厳格 / 関数 50 行以内 / ファイル 400 行目安
 - Server/Client 境界、Server Action 規約
@@ -48,6 +51,7 @@ description: 大機能追加の全体フロー — planner → tdd-guide → cod
 ### Step 4: Security Review (security-reviewer エージェント)
 
 `security-reviewer` を起動し、以下を確認:
+
 - シークレット非コミット
 - RLS ポリシー漏れ (新規テーブルがある場合)
 - service role key のクライアント流出なし

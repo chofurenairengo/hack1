@@ -1,6 +1,6 @@
 ---
-description: "Next.js 16 App Router 特化ルール (Server/Client 境界、Server Action、Supabase クライアント分離、shadcn/ui、framer-motion)"
-globs: ["src/**/*.ts", "src/**/*.tsx", "app/**/*.ts", "app/**/*.tsx"]
+description: 'Next.js 16 App Router 特化ルール (Server/Client 境界、Server Action、Supabase クライアント分離、shadcn/ui、framer-motion)'
+globs: ['src/**/*.ts', 'src/**/*.tsx', 'app/**/*.ts', 'app/**/*.tsx']
 alwaysApply: true
 ---
 
@@ -21,7 +21,7 @@ alwaysApply: true
 - `src/stores/` — Zustand (1 ドメイン = 1 ファイル)
 - `src/hooks/` — React カスタムフック
 - `src/types/supabase.ts` — `supabase gen types` 自動生成 (**手編集禁止**)
-- `src/types/api.ts` — クロスメンバー型契約 (メンバー A 管轄)
+- `src/types/api.ts` — クロスメンバー型契約 (メンバー B（PM）管轄)
 
 ## Server / Client 境界
 
@@ -32,17 +32,19 @@ alwaysApply: true
 ## Server Action 規約
 
 ```ts
-"use server"
-import { z } from "zod"
-import type { ActionResult } from "@/types/api"
+'use server';
+import { z } from 'zod';
+import type { ActionResult } from '@/types/api';
 
-const schema = z.object({ /* ... */ })
+const schema = z.object({
+  /* ... */
+});
 
 export async function doSomething(input: unknown): Promise<ActionResult<T>> {
-  const parsed = schema.safeParse(input)
-  if (!parsed.success) return { ok: false, error: "invalid_input" }
+  const parsed = schema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'invalid_input' };
   // Use Case を 1 つだけ呼ぶ。DB アクセスや外部 API 呼び出しを直接書かない
-  return await someUseCase(parsed.data)
+  return await someUseCase(parsed.data);
 }
 ```
 

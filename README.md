@@ -24,11 +24,18 @@ cp .env.example .env.local
 # Supabase CLI 認証 (初回のみ)
 supabase login
 
+-------------------------------------------------------
+# 以下このボックス内はsrc\types\supabase.tsがないときに実行
+# ここから
+
 # マイグレーション適用 (初回 or スキーマ変更後)
 supabase db push --project-ref yghjqxktjmtnwngjzljq
 
 # 型生成 (スキーマ変更後は都度実行)
 supabase gen types typescript --project-id yghjqxktjmtnwngjzljq > src/types/supabase.ts
+
+# ここまで
+-------------------------------------------------------
 
 # 開発サーバー起動
 pnpm dev

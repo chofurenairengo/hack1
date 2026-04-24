@@ -102,7 +102,7 @@ hack1/
 │   │   ├── types/                # ActionResult<T>, ブランド ID 等
 │   │   └── utils/                # 汎用ユーティリティ
 │   └── types/
-│       ├── api.ts                # クロスメンバー型契約 (メンバー A 管轄、変更は全レーン合意必須)
+│       ├── api.ts                # クロスメンバー型契約 (メンバー B（PM）管轄、変更は B 承認必須)
 │       └── supabase.ts           # supabase gen types 自動生成 (手編集禁止)
 ├── supabase/
 │   ├── migrations/               # SQL マイグレーション (必ず RLS 同梱)
@@ -201,14 +201,14 @@ export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string
 
 ## Member Lanes
 
-| メンバー | 主担当                                                  | 管轄ディレクトリ                                                                                                                                       |
-| -------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **A**    | スライド・Gemini・pptxgenjs・管理画面・クロスメンバー型 | `src/domain/slide/`, `src/application/slide/`, `src/infrastructure/ai/gemini/`, `src/infrastructure/pptx/`, `src/types/api.ts`, `supabase/migrations/` |
-| **B**    | VRM アバター・MediaPipe・表情追従                       | `src/infrastructure/avatar/`, `src/components/features/avatar/`                                                                                        |
-| **C**    | Realtime Broadcast (4 チャンネル) + WebRTC + 状態機械   | `src/infrastructure/realtime/`, `src/infrastructure/webrtc/`, `src/stores/realtime/`                                                                   |
-| **D**    | 投票・k-partition 2-opt・マッチ・チャット・顔写真同意   | `src/domain/matching/`, `src/domain/chat/`, `src/application/{vote,matching,match,chat}/`                                                              |
+| メンバー | 主担当                                                  | 管轄ディレクトリ                                                                                                                   |
+| -------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **A**    | スライド・Gemini・pptxgenjs・管理画面・DB基盤           | `src/domain/slide/`, `src/application/slide/`, `src/infrastructure/ai/gemini/`, `src/infrastructure/pptx/`, `supabase/migrations/` |
+| **B**    | PM・VRM アバター・MediaPipe・表情追従・クロスメンバー型 | `src/infrastructure/avatar/`, `src/components/features/avatar/`, `src/types/api.ts`, `src/types/db.ts`                             |
+| **C**    | Realtime Broadcast (4 チャンネル) + WebRTC + 状態機械   | `src/infrastructure/realtime/`, `src/infrastructure/webrtc/`, `src/stores/realtime/`                                               |
+| **D**    | 投票・k-partition 2-opt・マッチ・チャット・顔写真同意   | `src/domain/matching/`, `src/domain/chat/`, `src/application/{vote,matching,match,chat}/`                                          |
 
-越境編集は禁止。クロスメンバー型契約 (`src/shared/types/`) は **A 管轄**で、他メンバーは PR レビューで合意を取る。
+越境編集は禁止。クロスメンバー型契約 (`src/types/api.ts`, `src/types/db.ts`) は **B（PM）管轄**で、変更は B の承認が必要。
 
 ---
 
