@@ -69,7 +69,7 @@ const eslintConfig = defineConfig([
       ],
     },
     files: ['src/**/*.ts', 'src/**/*.tsx'],
-    ignores: ['src/shared/config/env.ts'],
+    ignores: ['src/shared/config/env.ts', 'src/shared/config/env.server.ts'],
   },
   {
     rules: {
