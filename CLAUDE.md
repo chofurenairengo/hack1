@@ -264,6 +264,7 @@ export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string
 
 ## References
 
-- ユーザー global 共通ルール: `~/.claude/rules/common/*.md` (coding-style / git-workflow / hooks / patterns / performance / security / testing / agents)
-- ユーザー global TypeScript ルール: `~/.claude/rules/typescript/*.md` (coding-style / hooks / patterns / security / testing)
+- プロジェクト同梱 共通ルール: [.claude/rules/common/](.claude/rules/common/) (agents / code-review / coding-style / development-workflow / git-workflow / hooks / patterns / performance / security / testing)
+- プロジェクト同梱 TypeScript ルール: [.claude/rules/typescript/](.claude/rules/typescript/) (coding-style / hooks / patterns / security / testing)
 - プロジェクト固有ルール: [.claude/rules/](.claude/rules/) — トモコイ固有 + Next.js/Supabase/Gemini/VRM 特化
+- 出典: [everything-claude-code](https://github.com/affaan-m/everything-claude-code) 最新版 (2026-04-24 取得)
