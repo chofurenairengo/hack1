@@ -21,6 +21,9 @@ cp .env.example .env.local
 # .env.local を編集して Supabase プロジェクトの値を設定
 # → https://supabase.com/dashboard でプロジェクトの API Settings から取得
 
+# Supabase CLI 認証 (初回のみ)
+supabase login
+
 # マイグレーション適用 (初回 or スキーマ変更後)
 supabase db push --project-ref yghjqxktjmtnwngjzljq
 

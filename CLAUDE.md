@@ -56,8 +56,9 @@ hack1/
 ├── src/
 │   ├── app/                      # Next.js App Router (Server Component デフォルト)
 │   │   ├── (public)/             # 未認証ページ (login, signup 等)
-│   │   ├── (dashboard)/          # 認証後ダッシュボード
-│   │   ├── events/[id]/          # イベント参加・実況画面
+│   │   ├── (app)/                # 認証後アプリ本体
+│   │   │   └── events/[eventId]/ # イベント参加・実況画面
+│   │   ├── (admin)/              # 管理者向け画面
 │   │   └── api/                  # Route Handler (webhook 等)
 │   ├── domain/                   # ドメイン層 (他層 import 禁止)
 │   │   ├── matching/             # k-partition 2-opt + 投票・テーブル ← メンバーD
@@ -101,6 +102,7 @@ hack1/
 │   │   ├── types/                # ActionResult<T>, ブランド ID 等
 │   │   └── utils/                # 汎用ユーティリティ
 │   └── types/
+│       ├── api.ts                # クロスメンバー型契約 (メンバー A 管轄、変更は全レーン合意必須)
 │       └── supabase.ts           # supabase gen types 自動生成 (手編集禁止)
 ├── supabase/
 │   ├── migrations/               # SQL マイグレーション (必ず RLS 同梱)
