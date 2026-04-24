@@ -108,17 +108,17 @@ hack1/
 ### Server Action 規約
 
 ```ts
-"use server"
-import { z } from "zod"
-import { ActionResult } from "@/types/api"
+'use server';
+import { z } from 'zod';
+import { ActionResult } from '@/types/api';
 
-const schema = z.object({ voteeId: z.string().uuid(), rank: z.number().int().min(1).max(3) })
+const schema = z.object({ voteeId: z.string().uuid(), rank: z.number().int().min(1).max(3) });
 
 export async function submitVote(input: unknown): Promise<ActionResult<{ id: string }>> {
-  const parsed = schema.safeParse(input)
-  if (!parsed.success) return { ok: false, error: "invalid_input" }
+  const parsed = schema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: 'invalid_input' };
   // Use Case を 1 つだけ呼ぶ
-  return await submitVoteUseCase(parsed.data)
+  return await submitVoteUseCase(parsed.data);
 }
 ```
 
@@ -129,14 +129,12 @@ Domain 層はインターフェース (`VoteRepository`) のみ、`infrastructur
 ### API Response 共通型
 
 ```ts
-export type ActionResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: string; code?: string }
+export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string; code?: string };
 ```
 
 ### Realtime Broadcast 4 チャンネル構成 (メンバーC 管轄)
 
-- `event:{eventId}:phase` — フェーズ遷移 (lobby / pitch / voting / mingling / epilogue)
+- `event:{eventId}:phase` — フェーズ遷移 (pre_event / entry / presentation / voting / intermission / mingling / closing)
 - `event:{eventId}:slide` — スライド表示同期
 - `event:{eventId}:stamp` — スタンプ (匿名、送信者 ID 保存しない)
 - `event:{eventId}:avatar` — MediaPipe 表情 + 音声メタ
@@ -145,14 +143,14 @@ export type ActionResult<T> =
 
 ## Environment Variables
 
-| 変数 | スコープ | 用途 |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | client + server | Supabase プロジェクト URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client + server | 匿名キー (RLS 適用) |
-| `SUPABASE_SERVICE_ROLE_KEY` | **server only** | RLS バイパス計算 (マッチング時のみ) |
-| `GEMINI_API_KEY` | **server only** | Gemini 3 Flash 呼び出し |
-| `RESEND_API_KEY` | **server only** | マッチ通知・差し戻しメール |
-| `DAILY_API_KEY` or `LIVEKIT_API_KEY` | **server only** | (検討中) 交流タイム用動画 |
+| 変数                                 | スコープ        | 用途                                |
+| ------------------------------------ | --------------- | ----------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`           | client + server | Supabase プロジェクト URL           |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`      | client + server | 匿名キー (RLS 適用)                 |
+| `SUPABASE_SERVICE_ROLE_KEY`          | **server only** | RLS バイパス計算 (マッチング時のみ) |
+| `GEMINI_API_KEY`                     | **server only** | Gemini 3 Flash 呼び出し             |
+| `RESEND_API_KEY`                     | **server only** | マッチ通知・差し戻しメール          |
+| `DAILY_API_KEY` or `LIVEKIT_API_KEY` | **server only** | (検討中) 交流タイム用動画           |
 
 **禁止事項**: `.env.local` / 秘密キーを含むファイルを Write しない (`.claude/settings.json` で deny 済み)。
 
@@ -174,24 +172,24 @@ export type ActionResult<T> =
 
 ## Phase Roadmap
 
-| Phase | 期間 | 主担当 | 内容 |
-|---|---|---|---|
-| Phase 0 | 4/13-4/15 | A 単独 | 基盤 (スキーマ、RLS、CI/CD、クロスメンバー型契約 `types/api.ts` 確定) |
-| Phase 1 | 4/16-4/19 | 全員 | 各レーン PoC (B: VRM スマホ PoC 必須、C: Realtime 2タブエコー、A/D: DB 疎通) |
-| Phase 2 | 4/20-4/26 | 全員 | スライド生成 / アバター本実装 / Realtime 基盤 / 投票・推薦。**中間発表 4/25** |
-| Phase 3 | 4/27-5/3 | 全員 | GW 集中: マッチング計算 + テーブル案内 / チャット・同意 / パフォーマンス / pptxgenjs |
-| Phase 4 | 5/4-5/10 | 全員 | 統合テスト / デモ脚本 / 本番相当リハーサル / **最終発表 5/9-5/10** |
+| Phase   | 期間      | 主担当 | 内容                                                                                 |
+| ------- | --------- | ------ | ------------------------------------------------------------------------------------ |
+| Phase 0 | 4/13-4/15 | A 単独 | 基盤 (スキーマ、RLS、CI/CD、クロスメンバー型契約 `types/api.ts` 確定)                |
+| Phase 1 | 4/16-4/19 | 全員   | 各レーン PoC (B: VRM スマホ PoC 必須、C: Realtime 2タブエコー、A/D: DB 疎通)         |
+| Phase 2 | 4/20-4/26 | 全員   | スライド生成 / アバター本実装 / Realtime 基盤 / 投票・推薦。**中間発表 4/25**        |
+| Phase 3 | 4/27-5/3  | 全員   | GW 集中: マッチング計算 + テーブル案内 / チャット・同意 / パフォーマンス / pptxgenjs |
+| Phase 4 | 5/4-5/10  | 全員   | 統合テスト / デモ脚本 / 本番相当リハーサル / **最終発表 5/9-5/10**                   |
 
 ---
 
 ## Member Lanes
 
-| メンバー | 主担当 | 管轄ディレクトリ |
-|---|---|---|
-| **A** | スライド・Gemini・pptxgenjs・管理画面・クロスメンバー型 | `src/domain/slide/`, `src/application/slide/`, `src/infrastructure/ai/gemini/`, `src/infrastructure/pptx/`, `src/types/api.ts`, `supabase/migrations/` |
-| **B** | VRM アバター・MediaPipe・表情追従 | `src/infrastructure/avatar/`, `src/components/features/avatar/` |
-| **C** | Realtime Broadcast (4 チャンネル) + WebRTC + 状態機械 | `src/infrastructure/realtime/`, `src/infrastructure/webrtc/`, `src/stores/realtime/` |
-| **D** | 投票・k-partition 2-opt・マッチ・チャット・顔写真同意 | `src/domain/matching/`, `src/domain/vote/`, `src/domain/match/`, `src/application/{vote,matching,match}/` |
+| メンバー | 主担当                                                  | 管轄ディレクトリ                                                                                                                                       |
+| -------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **A**    | スライド・Gemini・pptxgenjs・管理画面・クロスメンバー型 | `src/domain/slide/`, `src/application/slide/`, `src/infrastructure/ai/gemini/`, `src/infrastructure/pptx/`, `src/types/api.ts`, `supabase/migrations/` |
+| **B**    | VRM アバター・MediaPipe・表情追従                       | `src/infrastructure/avatar/`, `src/components/features/avatar/`                                                                                        |
+| **C**    | Realtime Broadcast (4 チャンネル) + WebRTC + 状態機械   | `src/infrastructure/realtime/`, `src/infrastructure/webrtc/`, `src/stores/realtime/`                                                                   |
+| **D**    | 投票・k-partition 2-opt・マッチ・チャット・顔写真同意   | `src/domain/matching/`, `src/domain/vote/`, `src/domain/match/`, `src/application/{vote,matching,match}/`                                              |
 
 越境編集は禁止。クロスメンバー型契約 (`src/types/api.ts`, `src/types/db.ts`) は **A 管轄**で、他メンバーは PR レビューで合意を取る。
 
@@ -199,18 +197,18 @@ export type ActionResult<T> =
 
 ## ECC Workflow
 
-| スラッシュコマンド | 用途 |
-|---|---|
+| スラッシュコマンド     | 用途                                                                       |
+| ---------------------- | -------------------------------------------------------------------------- |
 | `/feature-development` | 大機能追加: planner → tdd-guide → code-reviewer → security-reviewer を順次 |
-| `/database-migration` | `supabase/migrations/` + RLS ポリシー + `gen types` + `rls-auditor` 起動 |
-| `/rls-audit` | 全テーブルの RLS 監査 |
-| `/phase0-check` | Phase 0 基盤完了チェック (スキーマ、RLS 全テーブル、CI、`types/api.ts`) |
-| `/member-a-slide` | A レーン (スライド・Gemini・pptxgenjs) 開始プロトコル |
-| `/member-b-avatar` | B レーン (VRM・MediaPipe・スマホ PoC) |
-| `/member-c-realtime` | C レーン (Realtime Broadcast・WebRTC・offline fallback) |
-| `/member-d-matching` | D レーン (投票・k-partition・チャット・顔写真同意) |
-| `/match-test` | k-partition 2-opt ゴールデンテスト + N=20 ベンチ回帰 |
-| `/integration-test` | Phase 4 E2E (Playwright) |
+| `/database-migration`  | `supabase/migrations/` + RLS ポリシー + `gen types` + `rls-auditor` 起動   |
+| `/rls-audit`           | 全テーブルの RLS 監査                                                      |
+| `/phase0-check`        | Phase 0 基盤完了チェック (スキーマ、RLS 全テーブル、CI、`types/api.ts`)    |
+| `/member-a-slide`      | A レーン (スライド・Gemini・pptxgenjs) 開始プロトコル                      |
+| `/member-b-avatar`     | B レーン (VRM・MediaPipe・スマホ PoC)                                      |
+| `/member-c-realtime`   | C レーン (Realtime Broadcast・WebRTC・offline fallback)                    |
+| `/member-d-matching`   | D レーン (投票・k-partition・チャット・顔写真同意)                         |
+| `/match-test`          | k-partition 2-opt ゴールデンテスト + N=20 ベンチ回帰                       |
+| `/integration-test`    | Phase 4 E2E (Playwright)                                                   |
 
 ---
 

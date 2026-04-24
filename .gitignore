@@ -21,7 +21,13 @@ npm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# supabaseのキャッシュ
+supabase/.temp
+
 # Claude Code
 # .claude/ 配下はチーム共有するためコミット対象とする。
 # 個人固有の設定 (settings.local.json) のみ ignore する。
 .claude/settings.local.json
+
+# Test coverage
+coverage/

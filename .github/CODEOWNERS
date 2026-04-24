@@ -1,0 +1,18 @@
+# CODEOWNERS — トモコイ
+# メンバー A (miyabi206) が基盤・クロスメンバー型・migration を管轄
+
+# Default owner for everything
+* @miyabi206
+
+# Cross-member types and shared infrastructure (A lane)
+src/shared/                     @miyabi206
+src/types/                      @miyabi206
+supabase/                       @miyabi206
+src/infrastructure/supabase/    @miyabi206
+src/domain/slide/               @miyabi206
+src/application/slide/          @miyabi206
+src/infrastructure/ai/          @miyabi206
+src/infrastructure/pptx/        @miyabi206
+
+# CI/CD
+.github/                        @miyabi206
