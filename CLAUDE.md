@@ -14,7 +14,7 @@
 
 1. **RLS は必須**。新規テーブルには必ず Row Level Security ポリシーを同梱する。RLS なしの migration は PR を出さない。
 2. **イベント参加者以外はデータ参照不可**。`entries` に存在しない `user_id` は当該 `events.id` に属するレコードを SELECT できない。
-3. **`SUPABASE_SERVICE_ROLE_KEY` はクライアントに渡さない**。ブラウザは `anon key` のみ。service role はサーバ専用 (`src/lib/supabase/server.ts` に隔離)。
+3. **`SUPABASE_SERVICE_ROLE_KEY` はクライアントに渡さない**。ブラウザは `anon key` のみ。service role はサーバ専用 (`src/infrastructure/supabase/client-admin.ts` に隔離、`server-only` import 必須)。
 
 ### Matching (独自 k-partition 2-opt)
 
@@ -55,38 +55,55 @@
 hack1/
 ├── src/
 │   ├── app/                      # Next.js App Router (Server Component デフォルト)
-│   │   ├── (marketing)/          # 公開ページ
-│   │   ├── (dashboard)/          # 認証後ダッシュボード
-│   │   ├── events/[id]/          # イベント参加・実況画面
+│   │   ├── (public)/             # 未認証ページ (login, signup 等)
+│   │   ├── (app)/                # 認証後アプリ本体
+│   │   │   └── events/[eventId]/ # イベント参加・実況画面
+│   │   ├── (admin)/              # 管理者向け画面
 │   │   └── api/                  # Route Handler (webhook 等)
 │   ├── domain/                   # ドメイン層 (他層 import 禁止)
-│   │   ├── matching/             # k-partition 2-opt 本体 ← メンバーD
-│   │   ├── vote/                 # 投票エンティティ・値オブジェクト
+│   │   ├── matching/             # k-partition 2-opt + 投票・テーブル ← メンバーD
 │   │   ├── slide/                # スライドエンティティ ← メンバーA
-│   │   └── match/                # マッチ・同意エンティティ
+│   │   ├── avatar/               # アバタードメイン ← メンバーB
+│   │   ├── chat/                 # チャット・マッチドメイン ← メンバーD
+│   │   ├── event/                # イベント・エントリドメイン
+│   │   ├── stamp/                # スタンプ・アワードドメイン
+│   │   ├── user/                 # ユーザードメイン
+│   │   └── shared/               # ドメイン共通 (Result, DomainError 等)
 │   ├── application/              # Use Case (Domain のみ依存)
 │   │   ├── slide/                # SubmitSlideDeck, GenerateSlide 等
 │   │   ├── vote/                 # SubmitVote
 │   │   ├── matching/             # ComputeMatching
-│   │   └── match/                # AcceptMatch, RevealPhoto 等
+│   │   ├── match/                # AcceptMatch, RevealPhoto 等
+│   │   ├── chat/                 # SendMessage 等
+│   │   ├── event/                # CreateEvent 等
+│   │   ├── stamp/                # SendStamp 等
+│   │   └── shared/               # UseCase 共通基盤
 │   ├── infrastructure/           # Repository 実装 + Adapter
-│   │   ├── supabase/             # SupabaseClient (browser/server 分離)
+│   │   ├── supabase/             # Supabase クライアント (browser/server/admin 分離)
+│   │   │   ├── client-browser.ts # createBrowserClient + anon key
+│   │   │   ├── client-server.ts  # createServerClient (RSC/Route Handler 用、server-only)
+│   │   │   ├── client-admin.ts   # service role 専用 (server-only、マッチング計算のみ)
+│   │   │   └── middleware.ts     # セッション refresh
 │   │   ├── ai/gemini/            # GeminiSlideGeneratorAdapter ← メンバーA
 │   │   ├── realtime/             # Supabase Realtime Broadcast ← メンバーC
 │   │   ├── webrtc/               # P2P 音声 ← メンバーC
 │   │   ├── avatar/               # VRM + MediaPipe ← メンバーB
-│   │   └── pptx/                 # pptxgenjs ← メンバーA
+│   │   ├── pptx/                 # pptxgenjs ← メンバーA
+│   │   ├── email/                # Resend メール送信
+│   │   └── storage/              # Supabase Storage (顔写真等)
 │   ├── components/
 │   │   ├── ui/                   # shadcn/ui 生成物 (手編集禁止)
 │   │   └── features/             # 機能別コンポーネント
 │   ├── stores/                   # Zustand (1 ドメイン = 1 ストア)
 │   ├── hooks/                    # React カスタムフック
-│   ├── lib/                      # フレームワーク非依存ユーティリティ
-│   │   ├── supabase/             # createBrowserClient / createServerClient
-│   │   └── schemas/              # zod スキーマ (server/client 共通)
+│   ├── shared/                   # フレームワーク非依存ユーティリティ
+│   │   ├── config/               # env.ts (Zod 起動時検証)
+│   │   ├── constants/            # アプリ定数
+│   │   ├── types/                # ActionResult<T>, ブランド ID 等
+│   │   └── utils/                # 汎用ユーティリティ
 │   └── types/
-│       ├── supabase.ts           # supabase gen types 自動生成 (手編集禁止)
-│       └── api.ts                # クロスメンバー型契約 ← メンバーA 管轄
+│       ├── api.ts                # クロスメンバー型契約 (メンバー A 管轄、変更は全レーン合意必須)
+│       └── supabase.ts           # supabase gen types 自動生成 (手編集禁止)
 ├── supabase/
 │   ├── migrations/               # SQL マイグレーション (必ず RLS 同梱)
 │   ├── seed.sql
@@ -110,7 +127,7 @@ hack1/
 ```ts
 'use server';
 import { z } from 'zod';
-import { ActionResult } from '@/types/api';
+import type { ActionResult } from '@/shared/types/action-result';
 
 const schema = z.object({ voteeId: z.string().uuid(), rank: z.number().int().min(1).max(3) });
 
@@ -189,9 +206,9 @@ export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string
 | **A**    | スライド・Gemini・pptxgenjs・管理画面・クロスメンバー型 | `src/domain/slide/`, `src/application/slide/`, `src/infrastructure/ai/gemini/`, `src/infrastructure/pptx/`, `src/types/api.ts`, `supabase/migrations/` |
 | **B**    | VRM アバター・MediaPipe・表情追従                       | `src/infrastructure/avatar/`, `src/components/features/avatar/`                                                                                        |
 | **C**    | Realtime Broadcast (4 チャンネル) + WebRTC + 状態機械   | `src/infrastructure/realtime/`, `src/infrastructure/webrtc/`, `src/stores/realtime/`                                                                   |
-| **D**    | 投票・k-partition 2-opt・マッチ・チャット・顔写真同意   | `src/domain/matching/`, `src/domain/vote/`, `src/domain/match/`, `src/application/{vote,matching,match}/`                                              |
+| **D**    | 投票・k-partition 2-opt・マッチ・チャット・顔写真同意   | `src/domain/matching/`, `src/domain/chat/`, `src/application/{vote,matching,match,chat}/`                                                              |
 
-越境編集は禁止。クロスメンバー型契約 (`src/types/api.ts`, `src/types/db.ts`) は **A 管轄**で、他メンバーは PR レビューで合意を取る。
+越境編集は禁止。クロスメンバー型契約 (`src/shared/types/`) は **A 管轄**で、他メンバーは PR レビューで合意を取る。
 
 ---
 

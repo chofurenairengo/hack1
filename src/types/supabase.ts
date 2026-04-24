@@ -1,3 +1,6 @@
+// AUTO-GENERATED FILE — DO NOT EDIT
+// Regenerate with: supabase gen types typescript --project-id yghjqxktjmtnwngjzljq > src/types/supabase.ts
+
 export type Json =
   | string
   | number
