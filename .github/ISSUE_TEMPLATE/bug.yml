@@ -1,0 +1,79 @@
+name: バグ修正 (fix)
+description: バグ報告・修正タスク
+title: "fix(<lane>): "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **タイトル形式**: `fix(<lane>): <説明>`
+        例: `fix(d): 相互投票検出で重複 matches が作成される`
+
+  - type: dropdown
+    id: lane
+    attributes:
+      label: レーン
+      description: このissueを担当するレーンを選択してください
+      options:
+        - A (スライド・Gemini・管理)
+        - B (VRM・MediaPipe)
+        - C (Realtime・WebRTC)
+        - D (投票・マッチング・チャット)
+        - 横断 (基盤・CI/CD・ドキュメント)
+    validations:
+      required: true
+
+  - type: textarea
+    id: overview
+    attributes:
+      label: 概要
+      description: バグの概要と修正方針を記載してください
+      placeholder: |
+        〇〇フローで△△が発生する。□□を修正することで解決する。
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 再現手順
+      placeholder: |
+        1. 〇〇画面を開く
+        2. △△ボタンをクリック
+        3. □□が表示される
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待動作
+      placeholder: 〇〇が表示されるべき
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の動作
+      placeholder: △△が表示される / エラーが発生する
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 完了条件
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: 参照
+      placeholder: |
+        - 関連 issue: #
+        - ルール: `.claude/rules/xxx.md`

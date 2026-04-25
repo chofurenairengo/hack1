@@ -1,0 +1,91 @@
+name: 機能追加 (feat)
+description: 新機能の実装タスク
+title: "feat(<lane>): "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **タイトル形式**: `feat(<lane>): <説明>`
+        例: `feat(b): VRM ローダー実装`、`feat(d): 投票 UI (VotingSheet)`
+
+  - type: dropdown
+    id: lane
+    attributes:
+      label: レーン
+      description: このissueを担当するレーンを選択してください
+      options:
+        - A (スライド・Gemini・管理)
+        - B (VRM・MediaPipe)
+        - C (Realtime・WebRTC)
+        - D (投票・マッチング・チャット)
+        - 横断 (基盤・CI/CD・ドキュメント)
+    validations:
+      required: true
+
+  - type: textarea
+    id: overview
+    attributes:
+      label: 概要
+      description: 実装する機能の目的と要約を記載してください
+      placeholder: |
+        〇〇を実装する。△△ UseCase を受け取り、□□で集計する。
+    validations:
+      required: true
+
+  - type: textarea
+    id: target-files
+    attributes:
+      label: 対象ファイル
+      description: 追加・変更するファイルパス（任意）
+      placeholder: |
+        - `src/infrastructure/avatar/vrm-loader.ts`
+        - `src/components/features/avatar/AvatarCanvas.tsx`
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: 実装内容
+      description: コンポーネント・UseCase・型定義など、実装の詳細を記載してください
+      placeholder: |
+        ### XxxComponent
+        - 実装詳細 1
+        - 実装詳細 2
+
+        ### SubmitXxx Server Action
+        ```ts
+        'use server'
+        // schema: { ... }
+        // 戻り値: ActionResult<{ id: string }>
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 完了条件
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: cross-lane
+    attributes:
+      label: 他レーン依存
+      description: 他レーンとの連携・ブロッカーがある場合は記載してください（なければ「なし」）
+      value: |
+        | 相手 | 内容 | 先行対応 |
+        |------|------|---------|
+        | なし | - | - |
+
+  - type: textarea
+    id: references
+    attributes:
+      label: 参照
+      placeholder: |
+        - 親 issue: #
+        - ルール: `.claude/rules/xxx.md`
+        - 仕様: `docs/tech_spec/xx_x_xxx.md`
