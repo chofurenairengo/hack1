@@ -1,4 +1,4 @@
-# hack1 — トモコイ (Date My Mate JP)
+# hack1 — トモコイ (Date My Mate)
 
 友人紹介型ライブマッチングイベントプラットフォーム。Hack-1 グランプリ 2026 出展作品。
 
