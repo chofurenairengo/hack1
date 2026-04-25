@@ -1,0 +1,113 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const mockRemoveChannel = vi.fn().mockResolvedValue(undefined);
+const mockChannel = vi.fn();
+
+vi.mock('@/infrastructure/supabase/client-browser', () => ({
+  createSupabaseBrowserClient: () => ({
+    channel: mockChannel,
+    removeChannel: mockRemoveChannel,
+  }),
+}));
+
+describe('SupabaseChannelFactory', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    mockChannel.mockReset();
+    mockRemoveChannel.mockReset().mockResolvedValue(undefined);
+  });
+
+  async function importFactory() {
+    const mod = await import('@/infrastructure/realtime/supabase-channel.factory');
+    return mod.channelFactory;
+  }
+
+  it('returns the same channel instance for the same name', async () => {
+    const fakeChannel = { subscribe: vi.fn() };
+    mockChannel.mockReturnValue(fakeChannel);
+
+    const factory = await importFactory();
+    const ch1 = factory.get('event:id:state');
+    const ch2 = factory.get('event:id:state');
+
+    expect(ch1).toBe(ch2);
+    expect(mockChannel).toHaveBeenCalledTimes(1);
+  });
+
+  it('creates separate channel instances for different names', async () => {
+    const fakeA = { name: 'A' };
+    const fakeB = { name: 'B' };
+    mockChannel.mockReturnValueOnce(fakeA).mockReturnValueOnce(fakeB);
+
+    const factory = await importFactory();
+    const a = factory.get('event:id:stamp');
+    const b = factory.get('event:id:state');
+
+    expect(a).not.toBe(b);
+    expect(mockChannel).toHaveBeenCalledTimes(2);
+  });
+
+  it('passes presence config when presence option is true', async () => {
+    mockChannel.mockReturnValue({});
+    const factory = await importFactory();
+
+    factory.get('event:id:state', { presence: true });
+
+    expect(mockChannel).toHaveBeenCalledWith('event:id:state', {
+      config: { presence: { key: 'event:id:state' } },
+    });
+  });
+
+  it('does not pass presence config when presence option is false', async () => {
+    mockChannel.mockReturnValue({});
+    const factory = await importFactory();
+
+    factory.get('event:id:stamp');
+
+    expect(mockChannel).toHaveBeenCalledWith('event:id:stamp');
+  });
+
+  it('has() returns false for unknown channels', async () => {
+    const factory = await importFactory();
+    expect(factory.has('event:id:unknown')).toBe(false);
+  });
+
+  it('has() returns true after get()', async () => {
+    mockChannel.mockReturnValue({});
+    const factory = await importFactory();
+
+    factory.get('event:id:stamp2');
+    expect(factory.has('event:id:stamp2')).toBe(true);
+  });
+
+  it('remove() calls removeChannel and clears the cache', async () => {
+    const fakeChannel = { id: 'ch' };
+    mockChannel.mockReturnValue(fakeChannel);
+
+    const factory = await importFactory();
+    factory.get('event:id:stamp3');
+    await factory.remove('event:id:stamp3');
+
+    expect(mockRemoveChannel).toHaveBeenCalledWith(fakeChannel);
+    expect(factory.has('event:id:stamp3')).toBe(false);
+  });
+
+  it('remove() is a no-op for unknown channels', async () => {
+    const factory = await importFactory();
+    await expect(factory.remove('nonexistent')).resolves.toBeUndefined();
+    expect(mockRemoveChannel).not.toHaveBeenCalled();
+  });
+
+  it('removeAll() removes all cached channels', async () => {
+    mockChannel.mockReturnValue({});
+    const factory = await importFactory();
+
+    factory.get('ch-a');
+    factory.get('ch-b');
+    await factory.removeAll();
+
+    expect(factory.has('ch-a')).toBe(false);
+    expect(factory.has('ch-b')).toBe(false);
+    expect(mockRemoveChannel).toHaveBeenCalledTimes(2);
+  });
+});
