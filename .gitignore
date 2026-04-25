@@ -29,5 +29,13 @@ supabase/.temp
 # 個人固有の設定 (settings.local.json) のみ ignore する。
 .claude/settings.local.json
 
+# Pro プランのトークン節約目的でローカル削除するルールファイル (コミット不要)
+# 削除・編集しても git に出てこない。README の「Claude Code Pro プランのトークン節約」参照。
+.claude/rules/ai-gemini-prompts.md
+.claude/rules/vrm-avatar.md
+.claude/rules/realtime-webrtc.md
+.claude/rules/matching-algorithm.md
+
+
 # Test coverage
 coverage/
