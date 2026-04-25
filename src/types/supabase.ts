@@ -1,6 +1,3 @@
-// AUTO-GENERATED FILE — DO NOT EDIT
-// Regenerate with: supabase gen types typescript --project-id yghjqxktjmtnwngjzljq > src/types/supabase.ts
-
 export type Json =
   | string
   | number
@@ -10,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -1040,3 +1032,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
