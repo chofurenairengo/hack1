@@ -6,7 +6,7 @@ export type { Result } from '@/domain/shared/types/result';
 export { ok, err } from '@/domain/shared/types/result';
 
 /** Gender balance fallback order when 2:2 per table is not achievable */
-export type GenderFallback = '2m1f' | '1m2f' | '3m0f' | '0m3f';
+export type GenderFallback = '2m1f' | '1m2f' | '3m0f';
 
 /** Policy governing table sizes and gender balance (hard constraints per spec) */
 export type SeatPolicy = Readonly<{
