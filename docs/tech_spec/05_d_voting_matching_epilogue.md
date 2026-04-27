@@ -48,7 +48,7 @@
   - プロパティ：`id`、`eventId`、`voterId`、`voteeId`、`priority: 1 | 2 | 3`、`createdAt`
   - 不変条件：`voterId != voteeId`、同一 `(eventId, voterId, voteeId)` は一意、1 voter の `priority` は重複しない（3 件まで）
 - **`Table`**：交流テーブル
-  - プロパティ：`id`、`eventId`、`roundNumber`、`seatCount: 3 | 4`
+  - プロパティ：`id`、`eventId`、`roundNumber`、`seatCount: 3 | 4 | 5`
 - **`TableMember`**：テーブル所属
   - プロパティ：`tableId`、`userId`、`gender`
 - **`Recommendation`**：紹介者による推薦フラグ（参考情報、アルゴリズム非入力）
@@ -86,10 +86,9 @@
 
 #### 2.3.1 入力
 
-- `voters`：`{ userId, gender }[]`
-- `votes`：`{ voterId, voteeId, priority }[]`
-- `exclusionPairs`：同テーブルに入れたくないペア（登壇ペア同士など）
-- `seatPolicy`：テーブルあたり 3〜4 名、男女基本 2:2、はぐれ処理として `2m1f` / `1m2f` / `3m0f` / `0m3f`（2:2 不成立時の緩和順序）
+- `VoteSet`：`{ participants: Participant[], votes: Vote[], policy: SeatPolicy }` (`src/domain/matching/types.ts` 参照)
+  - `participants` は presenter / presentee 双方を含む。アルゴリズム内で `role === 'presentee'` にフィルタして使用
+  - `policy.allowedTableSizes`：`readonly [3, 4]`（通常）または `readonly [3, 4, 5]`（N=5 のみ）
 - `seed`：再現性のための乱数シード
 
 #### 2.3.2 出力
@@ -98,21 +97,21 @@
 
 #### 2.3.3 制約
 
-- **硬制約**（必ず満たす）：全員が 1 テーブルに属する／テーブル人数 3〜4 名／`exclusionPairs` に入っているペアは同テーブル不可
+- **硬制約**（必ず満たす）：全被紹介者が 1 テーブルに属する（紹介者は卓不参加）／テーブル人数 3〜5 名（N=5 のみ 5 を許容）
 - **軟制約**（最大化・最小化、辞書式優先順）：①相互投票 rank 合計を最大 ②男女バランス 2:2 を最大 ③混合卓を最大（加重和で近似、乗数比で辞書式を担保）
 - **優先度重み**：`mutualWeight[priority1 × priority2]` を設計
   - 例：お互い 1 位 = 9 点 / 1 位×2 位 = 6 / 2 位×2 位 = 4 / 1 位×3 位 = 3 / 2 位×3 位 = 2 / 3 位×3 位 = 1 / 片方のみ投票 = 0.2（促進でなく軽いヒント）
 
 #### 2.3.4 アルゴリズムフロー
 
-1. **初期解の生成**：男女交互にランダムシャッフルして 3〜4 人ずつ分配（seed 固定）
+1. **初期解の生成**：男女交互にランダムシャッフルして 3〜5 人ずつ分配（seed 固定）
 2. **2-opt 反復**：
    - ランダムに 2 テーブルを選び、一方のメンバー 1 名と他方のメンバー 1 名を交換した場合のスコアを計算
    - 改善する場合のみ採用
-   - 硬制約違反の交換は即棄却（`exclusionPairs`、人数範囲外）
+   - 硬制約違反の交換は即棄却（人数範囲外）
 3. **最大反復**：`N * 200`（N=参加人数）または連続 `50` 回改善なしで早期終了
 4. **複数シードでのリトライ**：`seed=1..5` で回し、最良スコアを採用（実行時間は合計で 1 秒以内目標）
-5. **はぐれ処理**：2:2 が成立しない場合、`seatPolicy` に従って 2m1f / 1m2f / 3m0f / 0m3f を許容、`leftovers` に記録（ただし全員配置は硬制約として守る）
+5. **ソフト目的最適化**：辞書式優先で ①相互投票 rank 合計最大化 ②2F:2M 4人卓数最大化 ③混合卓数最大化 を加重和で近似。`leftovers` は全被紹介者配置を達成できない場合のみ（ハード制約違反を示す）
 
 #### 2.3.5 計算量・性能見積もり
 

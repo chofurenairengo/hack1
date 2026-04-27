@@ -2,10 +2,9 @@ import { describe, it } from 'vitest';
 
 describe('KPartition2Opt', () => {
   it.todo('same input + same seed → same output (determinism)');
-  it.todo('all participants are assigned (no leftovers when divisible by 3-4)');
-  it.todo('each table has 3 or 4 members');
-  it.todo('gender balance: tables are 2F:2M (±1 tolerance)');
-  it.todo('presenter pair is never at the same table');
+  it.todo('all presentees are assigned to tables (presenters excluded from seating)');
+  it.todo('each table has 3 or 4 members; N=5 presentees may yield one table of 5');
+  it.todo('soft objective: maximizes 2F:2M 4-person tables (lexicographic priority 2)');
   it.todo('handles 3v3 (6 participants, 2 tables of 3)');
   it.todo('handles 3v5 (8 participants, 2 tables of 4)');
   it.todo('handles participants with zero votes');
