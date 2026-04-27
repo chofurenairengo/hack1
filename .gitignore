@@ -27,6 +27,7 @@ supabase/.temp
 # Claude Code
 # .claude/ 配下はチーム共有するためコミット対象とする。
 # 個人固有の設定 (settings.local.json) のみ ignore する。
+.claude/settings.json
 .claude/settings.local.json
 
 # Pro プランのトークン節約目的でローカル削除するルールファイル (コミット不要)
