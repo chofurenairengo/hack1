@@ -1,1 +1,1 @@
-export type { TableAssignment, TableAssignmentPlan } from '@/domain/matching/types';
+export type { TableAssignmentPlan } from '@/domain/matching/types';
