@@ -8,7 +8,7 @@ export { ok, err } from '@/domain/shared/types/result';
 /** Policy governing allowed table sizes and soft objective weights */
 export type SeatPolicy = Readonly<{
   /** 通常は [3, 4]。被紹介者 N=5 のみ [3, 4, 5] を渡す */
-  allowedTableSizes: ReadonlyArray<3 | 4 | 5>;
+  allowedTableSizes: readonly [3, 4] | readonly [3, 4, 5];
   softWeights: Readonly<{
     /** 加重和スコアの乗数 (辞書式1位相当): 相互投票 rank 合計を最大化 (rank1=3, rank2=2, rank3=1) */
     mutualVoteRank: number;

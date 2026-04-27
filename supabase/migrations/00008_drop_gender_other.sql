@@ -1,7 +1,13 @@
--- Delete any 'other' gender users and their cascading data.
--- users テーブルの FK は ON DELETE CASCADE のため関連データも全て削除される。
--- seed.sql に other ユーザーはいないため通常 no-op。
-DELETE FROM public.users WHERE gender = 'other';
+-- Guard: abort if any 'other' gender rows exist so data loss is never silent.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.users WHERE gender = 'other') THEN
+    RAISE EXCEPTION
+      'Migration 00008 cannot continue: found users with gender = ''other''. '
+      'Clean up those rows explicitly before applying this migration.';
+  END IF;
+END
+$$;
 
 ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_gender_check;
 ALTER TABLE public.users
