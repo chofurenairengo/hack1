@@ -10,12 +10,12 @@ export type SeatPolicy = Readonly<{
   /** 通常は [3, 4]。被紹介者 N=5 のみ [3, 4, 5] を渡す */
   allowedTableSizes: ReadonlyArray<3 | 4 | 5>;
   softWeights: Readonly<{
-    /** 辞書式第1位: 4人卓中 female 2 / male 2 テーブル数を最大化 */
-    genderBalance22: number;
-    /** 辞書式第2位: 同性のみ卓を最小化 (other を含む卓は mixed 扱い) */
-    mixedTable: number;
-    /** 辞書式第3位: 相互投票 rank 合計を最大化 (rank1=3, rank2=2, rank3=1) */
+    /** 加重和スコアの乗数 (辞書式1位相当): 相互投票 rank 合計を最大化 (rank1=3, rank2=2, rank3=1) */
     mutualVoteRank: number;
+    /** 加重和スコアの乗数 (辞書式2位相当): 4人卓中 female 2 / male 2 テーブル数を最大化 */
+    genderBalance22: number;
+    /** 加重和スコアの乗数 (辞書式3位相当): 同性のみ卓を最小化 */
+    mixedTable: number;
   }>;
 }>;
 
@@ -50,9 +50,9 @@ export type TableAssignment = Readonly<{
   id: TableId;
   members: ReadonlyArray<UserId>;
   seatCount: 3 | 4 | 5;
-  /** 4人卓かつ female 2 / male 2 のとき true。other を含む場合は false */
+  /** 4人卓かつ female 2 / male 2 のとき true */
   is22: boolean;
-  /** 同性のみ卓でなければ true。other を含む卓は mixed 扱い */
+  /** 同性のみ卓でなければ true */
   isMixed: boolean;
   /** rank1=3, rank2=2, rank3=1 で双方向の rank 合計 */
   mutualRankScore: number;

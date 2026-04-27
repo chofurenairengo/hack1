@@ -71,15 +71,6 @@ describe('types — Participant', () => {
     };
     expect(p.role).toBe('presentee');
   });
-
-  it('accepts gender "other"', () => {
-    const p: Participant = {
-      id: asUserId('u-3'),
-      gender: 'other',
-      role: 'presentee',
-    };
-    expect(p.gender).toBe('other');
-  });
 });
 
 describe('types — Vote', () => {
