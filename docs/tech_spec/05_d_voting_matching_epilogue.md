@@ -89,7 +89,7 @@
 - `voters`：`{ userId, gender }[]`
 - `votes`：`{ voterId, voteeId, priority }[]`
 - `exclusionPairs`：同テーブルに入れたくないペア（登壇ペア同士など）
-- `seatPolicy`：テーブルあたり 3〜4 名、男女基本 2:2、はぐれ処理として `2m1f` / `1m2f` / `3m0f`（2:2 不成立時の緩和順序）
+- `seatPolicy`：テーブルあたり 3〜4 名、男女基本 2:2、はぐれ処理として `2m1f` / `1m2f` / `3m0f` / `0m3f`（2:2 不成立時の緩和順序）
 - `seed`：再現性のための乱数シード
 
 #### 2.3.2 出力
@@ -112,7 +112,7 @@
    - 硬制約違反の交換は即棄却（`exclusionPairs`、人数範囲外）
 3. **最大反復**：`N * 200`（N=参加人数）または連続 `50` 回改善なしで早期終了
 4. **複数シードでのリトライ**：`seed=1..5` で回し、最良スコアを採用（実行時間は合計で 1 秒以内目標）
-5. **はぐれ処理**：2:2 が成立しない場合、`seatPolicy` に従って 2m1f / 1m2f / 3m0f を許容、`leftovers` に記録（ただし全員配置は硬制約として守る）
+5. **はぐれ処理**：2:2 が成立しない場合、`seatPolicy` に従って 2m1f / 1m2f / 3m0f / 0m3f を許容、`leftovers` に記録（ただし全員配置は硬制約として守る）
 
 #### 2.3.5 計算量・性能見積もり
 
@@ -281,18 +281,18 @@ src/infrastructure/matching/
 
 ## 5. UI 画面と責務
 
-| 画面 | ファイル | 主要コンポーネント |
-|------|---------|-------------------|
-| 紹介者：推薦フラグ | `src/app/(app)/introductions/[introductionId]/recommendations/page.tsx` | `<RecommendationPicker>` 最大 3 名選択、ランク指定 |
-| 投票画面（交流タイム直前） | `src/app/(app)/events/[id]/live/voting/page.tsx` | `<VotingSheet>`：候補者カード一覧＋ドラッグで 1〜3 位に配置、送信ボタン |
-| 自分のテーブル案内 | `src/app/(app)/events/[id]/live/table/page.tsx` | `<TableBadge>`（テーブル番号大表示）、`<TableMemberList>` |
-| マッチ一覧 | `src/app/(app)/matches/page.tsx` | `<MatchCard>` 一覧、未読バッジ |
-| マッチ詳細 | `src/app/(app)/matches/[matchId]/page.tsx` | `<ChatWindow>`、`<PhotoRevealCard>`（同意状態と「お互い同意で表示」ボタン） |
-| チャット | `src/app/(app)/chat/[matchId]/page.tsx` | `<MessageList>`、`<Composer>`、通報・ブロックメニュー |
-| プロフィール写真設定 | `src/app/(app)/settings/photo/page.tsx` | `<PhotoUploader>`、`<PrimarySelector>` |
-| 公開同意設定 | `src/app/(app)/matches/[matchId]/consent/page.tsx` | `<ConsentToggle>`、取り消し注意表記 |
-| イベント終了アワード表示 | `src/app/(app)/events/[id]/awards/page.tsx` | `<AwardList>`、A が提供する `<SlideThumbnail>` を使う |
-| 管理者：通報一覧 | `src/app/(admin)/admin/reports/page.tsx` | `<ReportList>`、対応状況 |
+| 画面                       | ファイル                                                                | 主要コンポーネント                                                          |
+| -------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 紹介者：推薦フラグ         | `src/app/(app)/introductions/[introductionId]/recommendations/page.tsx` | `<RecommendationPicker>` 最大 3 名選択、ランク指定                          |
+| 投票画面（交流タイム直前） | `src/app/(app)/events/[id]/live/voting/page.tsx`                        | `<VotingSheet>`：候補者カード一覧＋ドラッグで 1〜3 位に配置、送信ボタン     |
+| 自分のテーブル案内         | `src/app/(app)/events/[id]/live/table/page.tsx`                         | `<TableBadge>`（テーブル番号大表示）、`<TableMemberList>`                   |
+| マッチ一覧                 | `src/app/(app)/matches/page.tsx`                                        | `<MatchCard>` 一覧、未読バッジ                                              |
+| マッチ詳細                 | `src/app/(app)/matches/[matchId]/page.tsx`                              | `<ChatWindow>`、`<PhotoRevealCard>`（同意状態と「お互い同意で表示」ボタン） |
+| チャット                   | `src/app/(app)/chat/[matchId]/page.tsx`                                 | `<MessageList>`、`<Composer>`、通報・ブロックメニュー                       |
+| プロフィール写真設定       | `src/app/(app)/settings/photo/page.tsx`                                 | `<PhotoUploader>`、`<PrimarySelector>`                                      |
+| 公開同意設定               | `src/app/(app)/matches/[matchId]/consent/page.tsx`                      | `<ConsentToggle>`、取り消し注意表記                                         |
+| イベント終了アワード表示   | `src/app/(app)/events/[id]/awards/page.tsx`                             | `<AwardList>`、A が提供する `<SlideThumbnail>` を使う                       |
+| 管理者：通報一覧           | `src/app/(admin)/admin/reports/page.tsx`                                | `<ReportList>`、対応状況                                                    |
 
 ### 5.1 投票 UI 詳細
 
@@ -314,23 +314,23 @@ src/infrastructure/matching/
 
 ## 6. Server Action 設計
 
-| Action | Use Case | 呼び出し元 |
-|--------|---------|-----------|
-| `src/app/actions/vote/submit-vote.ts` | `SubmitVote` | `<VotingSheet>` |
-| `src/app/actions/recommendation/submit.ts` | `SubmitRecommendation` | `<RecommendationPicker>` |
-| `src/app/actions/matching/compute.ts` | `ComputeMatching` | C の状態遷移から内部呼出 / 管理者コンソール |
-| `src/app/actions/matching/finalize.ts` | `FinalizeMatches` | 管理者コンソール |
-| `src/app/actions/match/notify-email.ts` | `NotifyMatchByEmail` | `FinalizeMatches` 内部呼出（Action ではなく App 層ヘルパ化も可） |
-| `src/app/actions/table/get-my-table.ts` | `GetMyTable` | 交流画面 |
-| `src/app/actions/chat/send-message.ts` | `SendMessage` | `<Composer>` |
-| `src/app/actions/chat/list-messages.ts` | `ListMessages` | `<ChatWindow>` |
-| `src/app/actions/chat/report-message.ts` | `ReportMessage` | メッセージメニュー |
-| `src/app/actions/user/block.ts` | `BlockUser` | プロフィールメニュー |
-| `src/app/actions/profile/upload-photo.ts` | `UploadProfilePhoto` | 写真設定画面 |
-| `src/app/actions/consent/agree.ts` | `ConsentToReveal` | 同意カード |
-| `src/app/actions/consent/revoke.ts` | `RevokeReveal` | 同意設定 |
-| `src/app/actions/consent/reveal-url.ts` | `RequestRevealUrl` | 写真表示ロード時 |
-| `src/app/actions/award/compute-stamp.ts` | `ComputeStampAward` | C の集計完了トリガー |
+| Action                                     | Use Case               | 呼び出し元                                                       |
+| ------------------------------------------ | ---------------------- | ---------------------------------------------------------------- |
+| `src/app/actions/vote/submit-vote.ts`      | `SubmitVote`           | `<VotingSheet>`                                                  |
+| `src/app/actions/recommendation/submit.ts` | `SubmitRecommendation` | `<RecommendationPicker>`                                         |
+| `src/app/actions/matching/compute.ts`      | `ComputeMatching`      | C の状態遷移から内部呼出 / 管理者コンソール                      |
+| `src/app/actions/matching/finalize.ts`     | `FinalizeMatches`      | 管理者コンソール                                                 |
+| `src/app/actions/match/notify-email.ts`    | `NotifyMatchByEmail`   | `FinalizeMatches` 内部呼出（Action ではなく App 層ヘルパ化も可） |
+| `src/app/actions/table/get-my-table.ts`    | `GetMyTable`           | 交流画面                                                         |
+| `src/app/actions/chat/send-message.ts`     | `SendMessage`          | `<Composer>`                                                     |
+| `src/app/actions/chat/list-messages.ts`    | `ListMessages`         | `<ChatWindow>`                                                   |
+| `src/app/actions/chat/report-message.ts`   | `ReportMessage`        | メッセージメニュー                                               |
+| `src/app/actions/user/block.ts`            | `BlockUser`            | プロフィールメニュー                                             |
+| `src/app/actions/profile/upload-photo.ts`  | `UploadProfilePhoto`   | 写真設定画面                                                     |
+| `src/app/actions/consent/agree.ts`         | `ConsentToReveal`      | 同意カード                                                       |
+| `src/app/actions/consent/revoke.ts`        | `RevokeReveal`         | 同意設定                                                         |
+| `src/app/actions/consent/reveal-url.ts`    | `RequestRevealUrl`     | 写真表示ロード時                                                 |
+| `src/app/actions/award/compute-stamp.ts`   | `ComputeStampAward`    | C の集計完了トリガー                                             |
 
 すべて 01 §8 の規約に従う。`ComputeMatching` と `RequestRevealUrl` のみ、service role クライアントを内部で利用する。
 
@@ -340,18 +340,18 @@ src/infrastructure/matching/
 
 01 §6 / §7 で定義したテーブルのうち、D が書き込みを伴うもの：
 
-| テーブル | 主要カラム | RLS INSERT | RLS SELECT |
-|---------|-----------|-----------|-----------|
-| `votes` | `event_id`, `voter_id`, `votee_id`, `priority` | `voter_id = auth.uid()` | `voter_id = auth.uid()` のみ（※ `ComputeMatching` は service role でバイパス）|
-| `recommendations` | `event_id`, `introducer_id`, `introducee_id`, `recommended_user_id`, `rank` | `introducer_id = auth.uid()` | 紹介者本人 / 被紹介者本人 / イベント管理者 |
-| `tables` / `table_members` | 席情報 | service role のみ | イベント参加者は自分のテーブルのメンバーのみ（`user_id IN (自テーブルのメンバー)`）|
-| `matches` | `user_a_id`, `user_b_id` | service role のみ（`FinalizeMatches`） | `user_a_id = auth.uid() OR user_b_id = auth.uid()` |
-| `match_messages` | `match_id`, `sender_id`, `body` | `sender_id = auth.uid() AND sender_id IN matches.user_a_id/user_b_id` | マッチ当事者のみ |
-| `photo_reveal_consents` | `match_id`, `user_id`, `state` | `user_id = auth.uid()` | `user_id = auth.uid()` のみ（※ `RequestRevealUrl` は service role でバイパス）|
-| `profile_photos` | `user_id`, `storage_path`, `is_primary` | `user_id = auth.uid()` | `user_id = auth.uid()` のみ（相手閲覧は署名URL経由） |
-| `reports` | `reporter_id`, `target_user_id` | `reporter_id = auth.uid()` | 管理者のみ |
-| `blocks` | `blocker_id`, `blocked_id` | `blocker_id = auth.uid()` | `blocker_id = auth.uid()` |
-| `awards` | `event_id`, `pair_id`, `kind` | service role のみ | イベント参加者 |
+| テーブル                   | 主要カラム                                                                  | RLS INSERT                                                            | RLS SELECT                                                                          |
+| -------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `votes`                    | `event_id`, `voter_id`, `votee_id`, `priority`                              | `voter_id = auth.uid()`                                               | `voter_id = auth.uid()` のみ（※ `ComputeMatching` は service role でバイパス）      |
+| `recommendations`          | `event_id`, `introducer_id`, `introducee_id`, `recommended_user_id`, `rank` | `introducer_id = auth.uid()`                                          | 紹介者本人 / 被紹介者本人 / イベント管理者                                          |
+| `tables` / `table_members` | 席情報                                                                      | service role のみ                                                     | イベント参加者は自分のテーブルのメンバーのみ（`user_id IN (自テーブルのメンバー)`） |
+| `matches`                  | `user_a_id`, `user_b_id`                                                    | service role のみ（`FinalizeMatches`）                                | `user_a_id = auth.uid() OR user_b_id = auth.uid()`                                  |
+| `match_messages`           | `match_id`, `sender_id`, `body`                                             | `sender_id = auth.uid() AND sender_id IN matches.user_a_id/user_b_id` | マッチ当事者のみ                                                                    |
+| `photo_reveal_consents`    | `match_id`, `user_id`, `state`                                              | `user_id = auth.uid()`                                                | `user_id = auth.uid()` のみ（※ `RequestRevealUrl` は service role でバイパス）      |
+| `profile_photos`           | `user_id`, `storage_path`, `is_primary`                                     | `user_id = auth.uid()`                                                | `user_id = auth.uid()` のみ（相手閲覧は署名URL経由）                                |
+| `reports`                  | `reporter_id`, `target_user_id`                                             | `reporter_id = auth.uid()`                                            | 管理者のみ                                                                          |
+| `blocks`                   | `blocker_id`, `blocked_id`                                                  | `blocker_id = auth.uid()`                                             | `blocker_id = auth.uid()`                                                           |
+| `awards`                   | `event_id`, `pair_id`, `kind`                                               | service role のみ                                                     | イベント参加者                                                                      |
 
 ### 7.1 RLS の検証手順（01 §11 ハンドオフチェックリストにも含む）
 
@@ -451,27 +451,27 @@ src/infrastructure/matching/
 
 ## 13. スケジュール（4 週間）
 
-| 週 | D のタスク | 完了基準 |
-|----|-----------|---------|
-| Week 1（4/13-19） | 基盤引き渡し後に DB スキーマ確認、k-partition アルゴリズム PoC（純粋関数のみ、UI無） | 8 名フィクスチャで期待テーブル割当が出る |
-| Week 2（4/20-26） | 投票 UI、`SubmitVote`、推薦フラグ UI、k-partition を 20 名フィクスチャまで拡張、プロフィール写真アップロード | 投票フローと写真アップが動く |
-| Week 3（4/27-5/3） | `ComputeMatching` 本番結線、テーブル案内画面、マッチ成立、Resend 通知、チャット、同意 + 署名URL | 模擬イベント通しで「投票→マッチ→チャット→写真」が通る |
-| Week 4（5/4-10） | 通報・ブロック、アワード表示、RLS 総点検、デモリハ、文言磨き | 本番相当フロー完走 |
+| 週                 | D のタスク                                                                                                   | 完了基準                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| Week 1（4/13-19）  | 基盤引き渡し後に DB スキーマ確認、k-partition アルゴリズム PoC（純粋関数のみ、UI無）                         | 8 名フィクスチャで期待テーブル割当が出る              |
+| Week 2（4/20-26）  | 投票 UI、`SubmitVote`、推薦フラグ UI、k-partition を 20 名フィクスチャまで拡張、プロフィール写真アップロード | 投票フローと写真アップが動く                          |
+| Week 3（4/27-5/3） | `ComputeMatching` 本番結線、テーブル案内画面、マッチ成立、Resend 通知、チャット、同意 + 署名URL              | 模擬イベント通しで「投票→マッチ→チャット→写真」が通る |
+| Week 4（5/4-10）   | 通報・ブロック、アワード表示、RLS 総点検、デモリハ、文言磨き                                                 | 本番相当フロー完走                                    |
 
 ---
 
 ## 14. リスクと緩和策
 
-| リスク | 緩和策 |
-|--------|--------|
-| 20 名以上でアルゴリズムが Vercel 10 秒タイムアウト超過 | 計算時間をロガーで継続計測、30 名閾値を超える場合は seed リトライ回数を減らす / Edge でなく Node ランタイム固定 |
-| 男女比が極端（例 8m2f）でテーブル 2:2 が破綻 | はぐれ処理のルールを seatPolicy で明示、UI で「バランス調整のため一部テーブルは 3m1f になります」表示 |
-| 票数が少ない（相互投票がほぼ無い）→ アルゴリズム出力がランダムに近い | 推薦フラグの表示でヒント提供（アルゴリズム入力ではないが UI 経由で人間の判断を誘発）、最低票数を UI で促す |
-| Resend 無料枠（月 3000 通）超過 | ハッカソン会場規模では安全。本番運用時は有料プラン切替を env 切替で即時対応できるよう `EmailSenderPort` を抽象化 |
-| 顔写真の URL がスクショで流出 | 技術的には防げないため UI に「スクリーンショット禁止」注意書き＋10 分 TTL で継続閲覧はできない旨を明記、通報で対応 |
-| 投票秘密性の侵害（service role key 漏洩） | Vercel の暗号化環境変数、サーバ側のみ参照、ESLint で import を限定、ログに key を絶対に出さない |
-| マッチ通知メールが迷惑メール判定 | Resend の SPF/DKIM 設定を事前に完了、送信ドメインは専用サブドメイン、件名に「トモコイ」明記 |
-| ブロック後も過去メッセージが見え続ける仕様への不満 | 「通報の証拠のため履歴は保持、相手からは見えない状態にする」旨を UI ヘルプで説明 |
+| リスク                                                               | 緩和策                                                                                                             |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| 20 名以上でアルゴリズムが Vercel 10 秒タイムアウト超過               | 計算時間をロガーで継続計測、30 名閾値を超える場合は seed リトライ回数を減らす / Edge でなく Node ランタイム固定    |
+| 男女比が極端（例 8m2f）でテーブル 2:2 が破綻                         | はぐれ処理のルールを seatPolicy で明示、UI で「バランス調整のため一部テーブルは 3m1f になります」表示              |
+| 票数が少ない（相互投票がほぼ無い）→ アルゴリズム出力がランダムに近い | 推薦フラグの表示でヒント提供（アルゴリズム入力ではないが UI 経由で人間の判断を誘発）、最低票数を UI で促す         |
+| Resend 無料枠（月 3000 通）超過                                      | ハッカソン会場規模では安全。本番運用時は有料プラン切替を env 切替で即時対応できるよう `EmailSenderPort` を抽象化   |
+| 顔写真の URL がスクショで流出                                        | 技術的には防げないため UI に「スクリーンショット禁止」注意書き＋10 分 TTL で継続閲覧はできない旨を明記、通報で対応 |
+| 投票秘密性の侵害（service role key 漏洩）                            | Vercel の暗号化環境変数、サーバ側のみ参照、ESLint で import を限定、ログに key を絶対に出さない                    |
+| マッチ通知メールが迷惑メール判定                                     | Resend の SPF/DKIM 設定を事前に完了、送信ドメインは専用サブドメイン、件名に「トモコイ」明記                        |
+| ブロック後も過去メッセージが見え続ける仕様への不満                   | 「通報の証拠のため履歴は保持、相手からは見えない状態にする」旨を UI ヘルプで説明                                   |
 
 ---
 
