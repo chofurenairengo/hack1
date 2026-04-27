@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ok, err } from '@/domain/matching/types';
 import type {
-  GenderFallback,
   Participant,
+  ParticipantRole,
   SeatPolicy,
   TableAssignment,
   TableAssignmentPlan,
@@ -10,56 +10,73 @@ import type {
   VoteSet,
   Result,
 } from '@/domain/matching/types';
-import { asUserId, asPairId, asTableId } from '@/shared/types/ids';
+import { asUserId, asTableId } from '@/shared/types/ids';
+
+const defaultPolicy: SeatPolicy = {
+  allowedTableSizes: [3, 4],
+  softWeights: { genderBalance22: 1, mixedTable: 1, mutualVoteRank: 1 },
+};
 
 describe('types — SeatPolicy', () => {
-  it('constrains minSeatsPerTable to literal 3 and maxSeatsPerTable to literal 4', () => {
+  it('accepts standard allowedTableSizes [3, 4]', () => {
     const policy: SeatPolicy = {
-      tableCount: 5,
-      minSeatsPerTable: 3,
-      maxSeatsPerTable: 4,
-      fallbackOrder: ['2m1f', '1m2f'],
+      allowedTableSizes: [3, 4],
+      softWeights: { genderBalance22: 1, mixedTable: 1, mutualVoteRank: 1 },
     };
-    expect(policy.minSeatsPerTable).toBe(3);
-    expect(policy.maxSeatsPerTable).toBe(4);
+    expect(policy.allowedTableSizes).toEqual([3, 4]);
   });
 
-  it('accepts all valid GenderFallback values', () => {
-    const allFallbacks: ReadonlyArray<GenderFallback> = ['2m1f', '1m2f', '3m0f', '0m3f'];
+  it('accepts N=5 exception allowedTableSizes [3, 4, 5]', () => {
     const policy: SeatPolicy = {
-      tableCount: 3,
-      minSeatsPerTable: 3,
-      maxSeatsPerTable: 4,
-      fallbackOrder: allFallbacks,
+      allowedTableSizes: [3, 4, 5],
+      softWeights: { genderBalance22: 2, mixedTable: 1, mutualVoteRank: 0.5 },
     };
-    expect(policy.fallbackOrder).toHaveLength(4);
+    expect(policy.allowedTableSizes).toContain(5);
+  });
+
+  it('holds softWeights for all three objectives', () => {
+    expect(defaultPolicy.softWeights.genderBalance22).toBe(1);
+    expect(defaultPolicy.softWeights.mixedTable).toBe(1);
+    expect(defaultPolicy.softWeights.mutualVoteRank).toBe(1);
+  });
+});
+
+describe('types — ParticipantRole', () => {
+  it('accepts presenter role', () => {
+    const role: ParticipantRole = 'presenter';
+    expect(role).toBe('presenter');
+  });
+
+  it('accepts presentee role', () => {
+    const role: ParticipantRole = 'presentee';
+    expect(role).toBe('presentee');
   });
 });
 
 describe('types — Participant', () => {
-  it('constructs a presenter participant with a pairId', () => {
+  it('constructs a presenter participant', () => {
     const p: Participant = {
       id: asUserId('u-1'),
       gender: 'female',
-      presenterPairId: asPairId('pair-1'),
+      role: 'presenter',
     };
-    expect(p.presenterPairId).not.toBeNull();
+    expect(p.role).toBe('presenter');
   });
 
-  it('constructs a non-presenter participant with null pairId', () => {
+  it('constructs a presentee participant', () => {
     const p: Participant = {
       id: asUserId('u-2'),
       gender: 'male',
-      presenterPairId: null,
+      role: 'presentee',
     };
-    expect(p.presenterPairId).toBeNull();
+    expect(p.role).toBe('presentee');
   });
 
   it('accepts gender "other"', () => {
     const p: Participant = {
       id: asUserId('u-3'),
       gender: 'other',
-      presenterPairId: null,
+      role: 'presentee',
     };
     expect(p.gender).toBe('other');
   });
@@ -85,45 +102,90 @@ describe('types — Vote', () => {
 });
 
 describe('types — VoteSet', () => {
-  const policy: SeatPolicy = {
-    tableCount: 3,
-    minSeatsPerTable: 3,
-    maxSeatsPerTable: 4,
-    fallbackOrder: ['2m1f', '1m2f'],
-  };
+  it('constructs a VoteSet with mixed presenter/presentee participants', () => {
+    const voteSet: VoteSet = {
+      participants: [
+        { id: asUserId('u-1'), gender: 'female', role: 'presenter' },
+        { id: asUserId('u-2'), gender: 'male', role: 'presentee' },
+      ],
+      votes: [],
+      policy: defaultPolicy,
+    };
+    expect(voteSet.participants).toHaveLength(2);
+    const [first, second] = voteSet.participants;
+    expect(first?.role).toBe('presenter');
+    expect(second?.role).toBe('presentee');
+  });
 
   it('constructs a minimal VoteSet with empty votes', () => {
     const voteSet: VoteSet = {
       participants: [
-        { id: asUserId('u-1'), gender: 'female', presenterPairId: null },
-        { id: asUserId('u-2'), gender: 'male', presenterPairId: null },
+        { id: asUserId('u-1'), gender: 'female', role: 'presentee' },
+        { id: asUserId('u-2'), gender: 'male', role: 'presentee' },
       ],
       votes: [],
-      policy,
+      policy: defaultPolicy,
     };
     expect(voteSet.votes).toHaveLength(0);
-    expect(voteSet.participants).toHaveLength(2);
   });
 });
 
 describe('types — TableAssignment', () => {
-  it('constructs a table with seatCount 4', () => {
+  it('constructs a 2:2 gender-balanced table', () => {
     const t: TableAssignment = {
       id: asTableId('tbl-1'),
       members: [asUserId('u-1'), asUserId('u-2'), asUserId('u-3'), asUserId('u-4')],
       seatCount: 4,
+      is22: true,
+      isMixed: true,
+      mutualRankScore: 6,
     };
-    expect(t.members).toHaveLength(4);
+    expect(t.is22).toBe(true);
+    expect(t.isMixed).toBe(true);
     expect(t.seatCount).toBe(4);
   });
 
-  it('constructs a table with seatCount 3', () => {
+  it('constructs a 3-person table', () => {
     const t: TableAssignment = {
       id: asTableId('tbl-2'),
       members: [asUserId('u-1'), asUserId('u-2'), asUserId('u-3')],
       seatCount: 3,
+      is22: false,
+      isMixed: true,
+      mutualRankScore: 3,
     };
     expect(t.seatCount).toBe(3);
+    expect(t.is22).toBe(false);
+  });
+
+  it('constructs a 5-person table for N=5 exception', () => {
+    const t: TableAssignment = {
+      id: asTableId('tbl-3'),
+      members: [
+        asUserId('u-1'),
+        asUserId('u-2'),
+        asUserId('u-3'),
+        asUserId('u-4'),
+        asUserId('u-5'),
+      ],
+      seatCount: 5,
+      is22: false,
+      isMixed: true,
+      mutualRankScore: 9,
+    };
+    expect(t.seatCount).toBe(5);
+  });
+
+  it('constructs a same-gender-only table (isMixed false)', () => {
+    const t: TableAssignment = {
+      id: asTableId('tbl-4'),
+      members: [asUserId('u-1'), asUserId('u-2'), asUserId('u-3')],
+      seatCount: 3,
+      is22: false,
+      isMixed: false,
+      mutualRankScore: 0,
+    };
+    expect(t.isMixed).toBe(false);
   });
 });
 
@@ -135,6 +197,9 @@ describe('types — TableAssignmentPlan', () => {
           id: asTableId('tbl-1'),
           members: [asUserId('u-1'), asUserId('u-2'), asUserId('u-3'), asUserId('u-4')],
           seatCount: 4,
+          is22: true,
+          isMixed: true,
+          mutualRankScore: 6,
         },
       ],
       leftovers: [],
