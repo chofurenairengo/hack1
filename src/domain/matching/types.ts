@@ -20,7 +20,7 @@ export type SeatPolicy = Readonly<{
 export type Participant = Readonly<{
   id: UserId;
   gender: Gender;
-  /** Null when not a presenter; non-null triggers the same-table exclusion constraint */
+  /** Null when not part of a presenter pair (both presenter and presentee share the same PairId); non-null triggers the same-table exclusion constraint */
   presenterPairId: PairId | null;
 }>;
 
