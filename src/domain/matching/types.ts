@@ -48,6 +48,7 @@ export type TableAssignment = Readonly<{
 /** Full matching result: assigned tables and any unassigned participants */
 export type TableAssignmentPlan = Readonly<{
   tables: ReadonlyArray<TableAssignment>;
+  /** Always empty in a valid result. Non-empty signals a hard-constraint violation (e.g., participant count cannot fill tables evenly). */
   leftovers: ReadonlyArray<UserId>;
   score: number;
 }>;
