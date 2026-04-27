@@ -2,12 +2,13 @@ import type { UserId } from '@/shared/types/ids';
 import type { Result } from '@/domain/shared/types/result';
 import type { NotFoundError } from '@/domain/shared/errors/not-found.error';
 import type { ValidationError } from '@/domain/shared/errors/validation.error';
+import type { Gender } from '@/domain/user/value-objects/gender.vo';
 
 export type UserProfile = Readonly<{
   id: UserId;
   nickname: string;
   age: number;
-  gender: 'female' | 'male' | 'other';
+  gender: Gender;
   preferredGenders: readonly string[];
   residencePref: string | null;
   bio: string | null;
@@ -23,13 +24,13 @@ export type CreateUserInput = Readonly<{
   id: UserId;
   nickname: string;
   age: number;
-  gender: 'female' | 'male' | 'other';
+  gender: Gender;
 }>;
 
 export type UpdateUserInput = Readonly<{
   nickname?: string;
   age?: number;
-  gender?: 'female' | 'male' | 'other';
+  gender?: Gender;
   preferredGenders?: readonly string[];
   residencePref?: string | null;
   bio?: string | null;
