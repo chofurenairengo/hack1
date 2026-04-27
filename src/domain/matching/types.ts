@@ -1,27 +1,33 @@
-import type { PairId, TableId, UserId } from '@/shared/types/ids';
+import type { TableId, UserId } from '@/shared/types/ids';
 import type { Gender } from '@/domain/user/value-objects/gender.vo';
 import type { VotePriority } from '@/domain/matching/value-objects/vote-priority.vo';
 
 export type { Result } from '@/domain/shared/types/result';
 export { ok, err } from '@/domain/shared/types/result';
 
-/** Gender balance fallback order when 2:2 per table is not achievable */
-export type GenderFallback = '2m1f' | '1m2f' | '3m0f' | '0m3f';
-
-/** Policy governing table sizes and gender balance (hard constraints per spec) */
+/** Policy governing allowed table sizes and soft objective weights */
 export type SeatPolicy = Readonly<{
-  tableCount: number;
-  minSeatsPerTable: 3;
-  maxSeatsPerTable: 4;
-  fallbackOrder: ReadonlyArray<GenderFallback>;
+  /** 通常は [3, 4]。被紹介者 N=5 のみ [3, 4, 5] を渡す */
+  allowedTableSizes: ReadonlyArray<3 | 4 | 5>;
+  softWeights: Readonly<{
+    /** 辞書式第1位: 4人卓中 female 2 / male 2 テーブル数を最大化 */
+    genderBalance22: number;
+    /** 辞書式第2位: 同性のみ卓を最小化 (other を含む卓は mixed 扱い) */
+    mixedTable: number;
+    /** 辞書式第3位: 相互投票 rank 合計を最大化 (rank1=3, rank2=2, rank3=1) */
+    mutualVoteRank: number;
+  }>;
 }>;
+
+/** Role of a participant in the event pair */
+export type ParticipantRole = 'presenter' | 'presentee';
 
 /** A single participant in the k-partition matching algorithm */
 export type Participant = Readonly<{
   id: UserId;
   gender: Gender;
-  /** Null when not part of a presenter pair (both presenter and presentee share the same PairId); non-null triggers the same-table exclusion constraint */
-  presenterPairId: PairId | null;
+  /** presenter は交流タイム卓に不参加。アルゴリズムは presentee のみを対象とする */
+  role: ParticipantRole;
 }>;
 
 /** A single vote cast by a participant (rank 1 = highest priority) */
@@ -33,6 +39,7 @@ export type Vote = Readonly<{
 
 /** Complete domain input to the k-partition 2-opt algorithm */
 export type VoteSet = Readonly<{
+  /** presenter / presentee 双方を含む。アルゴリズム内で role === 'presentee' にフィルタして使用 */
   participants: ReadonlyArray<Participant>;
   votes: ReadonlyArray<Vote>;
   policy: SeatPolicy;
@@ -42,7 +49,13 @@ export type VoteSet = Readonly<{
 export type TableAssignment = Readonly<{
   id: TableId;
   members: ReadonlyArray<UserId>;
-  seatCount: 3 | 4;
+  seatCount: 3 | 4 | 5;
+  /** 4人卓かつ female 2 / male 2 のとき true。other を含む場合は false */
+  is22: boolean;
+  /** 同性のみ卓でなければ true。other を含む卓は mixed 扱い */
+  isMixed: boolean;
+  /** rank1=3, rank2=2, rank3=1 で双方向の rank 合計 */
+  mutualRankScore: number;
 }>;
 
 /** Full matching result: assigned tables and any unassigned participants */
