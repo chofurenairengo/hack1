@@ -1,0 +1,83 @@
+name: タスク (chore / test / docs / refactor)
+description: テスト追加・ドキュメント更新・リファクタ・CI/CD など
+title: "<type>(<lane>): "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **タイトル形式**: `<type>(<lane>): <説明>`
+        type: `test` / `chore` / `docs` / `refactor` / `perf` / `ci`
+        例: `test(d): k-partition 2-opt 決定性・制約充足プロパティテスト`
+
+  - type: dropdown
+    id: lane
+    attributes:
+      label: レーン
+      description: このissueを担当するレーンを選択してください
+      options:
+        - A (スライド・Gemini・管理)
+        - B (VRM・MediaPipe)
+        - C (Realtime・WebRTC)
+        - D (投票・マッチング・チャット)
+        - 横断 (基盤・CI/CD・ドキュメント)
+    validations:
+      required: true
+
+  - type: textarea
+    id: overview
+    attributes:
+      label: 概要
+      description: タスクの目的と要約を記載してください
+      placeholder: |
+        〇〇のテストを追加する。△△の決定性と制約充足を fast-check で固定する。
+    validations:
+      required: true
+
+  - type: textarea
+    id: target-files
+    attributes:
+      label: 対象ファイル
+      description: 追加・変更するファイルパス（任意）
+      placeholder: |
+        - `tests/matching/determinism.test.ts`
+        - `src/infrastructure/avatar/vrm-loader.ts`
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: タスク
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 完了基準
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: cross-lane
+    attributes:
+      label: 他レーン依存
+      description: 他レーンとの連携・ブロッカーがある場合は記載してください（なければ「なし」）
+      value: |
+        | 相手 | 内容 | 先行対応 |
+        |------|------|---------|
+        | なし | - | - |
+
+  - type: textarea
+    id: references
+    attributes:
+      label: 参照
+      placeholder: |
+        - 親 issue: #
+        - ルール: `.claude/rules/xxx.md`
+        - 仕様: `docs/tech_spec/xx_x_xxx.md`
