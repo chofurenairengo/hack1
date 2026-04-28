@@ -45,6 +45,12 @@ export async function advancePhaseAction(
     return { ok: false, code: 'unauthenticated', message: '認証が必要です' };
   }
 
+  const { data: userRecord } = await supabase
+    .from('users')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+
   const useCase = new AdvanceEventPhase(
     new SupabaseEventRepository(),
     new SupabasePhasePublisher(),
@@ -56,6 +62,7 @@ export async function advancePhaseAction(
     nextPhase: parsed.data.nextPhase,
     round: parsed.data.round,
     requesterId: asUserId(user.id),
+    isAdmin: userRecord?.is_admin ?? false,
   });
 
   if (!result.ok) return toActionResult(result.error);

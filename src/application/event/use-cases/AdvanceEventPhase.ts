@@ -16,6 +16,7 @@ export type AdvanceEventPhaseInput = Readonly<{
   nextPhase: EventPhase;
   round: number;
   requesterId: UserId;
+  isAdmin: boolean;
 }>;
 
 export type AdvanceEventPhaseOutput = Readonly<{
@@ -23,7 +24,11 @@ export type AdvanceEventPhaseOutput = Readonly<{
   round: number;
 }>;
 
-export type AdvanceEventPhaseError = NotFoundError | ForbiddenError | InvalidTransitionError;
+export type AdvanceEventPhaseError =
+  | NotFoundError
+  | ForbiddenError
+  | InvalidTransitionError
+  | Error;
 
 export class AdvanceEventPhase {
   constructor(
@@ -39,8 +44,8 @@ export class AdvanceEventPhase {
     if (!found.ok) return found;
 
     const record = found.value;
-    if (record.organizerId !== input.requesterId) {
-      return err(new ForbiddenErr('イベントを進行できるのはオーガナイザーのみです'));
+    if (record.organizerId !== input.requesterId && !input.isAdmin) {
+      return err(new ForbiddenErr('イベントを進行できるのはオーガナイザーまたは管理者のみです'));
     }
 
     const event = Event.create({
@@ -55,12 +60,13 @@ export class AdvanceEventPhase {
     const updated = await this.eventRepo.updatePhase(input.eventId, input.nextPhase);
     if (!updated.ok) return updated;
 
-    await this.phasePublisher.publish(
+    const published = await this.phasePublisher.publish(
       input.eventId,
       input.nextPhase,
       input.round,
       new Date().toISOString(),
     );
+    if (!published.ok) return published;
 
     if (input.nextPhase === 'intermission') {
       await this.matchingTrigger.trigger(input.eventId);

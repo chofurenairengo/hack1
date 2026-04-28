@@ -3,22 +3,19 @@
 import { z } from 'zod';
 import type { ActionResult } from '@/shared/types/action-result';
 import type { EventPhase } from '@/domain/event/value-objects/event-phase.vo';
-import { StartNextRound } from '@/application/event/use-cases/StartNextRound';
+import { ListActivePhase } from '@/application/event/use-cases/ListActivePhase';
 import { SupabaseEventRepository } from '@/infrastructure/supabase/repositories/supabase-event.repository';
-import { SupabasePhasePublisher } from '@/infrastructure/realtime/phase-publisher.adapter';
 import { toActionResult } from '@/shared/utils/error';
 import { createSupabaseServerClient } from '@/infrastructure/supabase/client-server';
-import { asEventId, asUserId } from '@/shared/types/ids';
+import { asEventId } from '@/shared/types/ids';
 
 const schema = z.object({
   eventId: z.string().uuid(),
-  nextPhase: z.enum(['entry', 'presentation']),
-  nextRound: z.number().int().min(2),
 });
 
-export async function startNextRoundAction(
+export async function getActivePhaseAction(
   input: unknown,
-): Promise<ActionResult<{ phase: EventPhase; round: number }>> {
+): Promise<ActionResult<{ phase: EventPhase }>> {
   const parsed = schema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -37,20 +34,10 @@ export async function startNextRoundAction(
     return { ok: false, code: 'unauthenticated', message: '認証が必要です' };
   }
 
-  const { data: userRecord } = await supabase
-    .from('users')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single();
-
-  const useCase = new StartNextRound(new SupabaseEventRepository(), new SupabasePhasePublisher());
+  const useCase = new ListActivePhase(new SupabaseEventRepository());
 
   const result = await useCase.execute({
     eventId: asEventId(parsed.data.eventId),
-    nextPhase: parsed.data.nextPhase,
-    nextRound: parsed.data.nextRound,
-    requesterId: asUserId(user.id),
-    isAdmin: userRecord?.is_admin ?? false,
   });
 
   if (!result.ok) return toActionResult(result.error);

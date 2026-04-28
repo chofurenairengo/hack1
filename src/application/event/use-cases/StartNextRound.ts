@@ -15,6 +15,7 @@ export type StartNextRoundInput = Readonly<{
   nextPhase: 'entry' | 'presentation';
   nextRound: number;
   requesterId: UserId;
+  isAdmin: boolean;
 }>;
 
 export type StartNextRoundOutput = Readonly<{
@@ -22,7 +23,7 @@ export type StartNextRoundOutput = Readonly<{
   round: number;
 }>;
 
-export type StartNextRoundError = NotFoundError | ForbiddenError | InvalidTransitionError;
+export type StartNextRoundError = NotFoundError | ForbiddenError | InvalidTransitionError | Error;
 
 export class StartNextRound {
   constructor(
@@ -37,8 +38,8 @@ export class StartNextRound {
     if (!found.ok) return found;
 
     const record = found.value;
-    if (record.organizerId !== input.requesterId) {
-      return err(new ForbiddenErr('イベントを進行できるのはオーガナイザーのみです'));
+    if (record.organizerId !== input.requesterId && !input.isAdmin) {
+      return err(new ForbiddenErr('イベントを進行できるのはオーガナイザーまたは管理者のみです'));
     }
 
     const event = Event.create({
@@ -53,12 +54,13 @@ export class StartNextRound {
     const updated = await this.eventRepo.updatePhase(input.eventId, input.nextPhase);
     if (!updated.ok) return updated;
 
-    await this.phasePublisher.publish(
+    const published = await this.phasePublisher.publish(
       input.eventId,
       input.nextPhase,
       input.nextRound,
       new Date().toISOString(),
     );
+    if (!published.ok) return published;
 
     return ok({ phase: input.nextPhase, round: input.nextRound });
   }

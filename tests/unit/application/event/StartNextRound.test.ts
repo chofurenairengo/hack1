@@ -4,12 +4,14 @@ import type { EventRepository, EventRecord } from '@/domain/event/repositories/e
 import type { PhasePublisherPort } from '@/application/event/ports/phase-publisher.port';
 import { ok, err } from '@/domain/shared/types/result';
 import { NotFoundError } from '@/domain/shared/errors/not-found.error';
+import { ForbiddenError } from '@/domain/shared/errors/forbidden.error';
 import { InvalidTransitionError } from '@/domain/event/errors/invalid-transition.error';
 import { asEventId, asUserId } from '@/shared/types/ids';
 
 const eventId = asEventId('11111111-1111-1111-1111-111111111111');
 const organizerId = asUserId('22222222-2222-2222-2222-222222222222');
 const otherId = asUserId('33333333-3333-3333-3333-333333333333');
+const adminId = asUserId('44444444-4444-4444-4444-444444444444');
 
 const minglingRecord: EventRecord = {
   id: eventId,
@@ -48,6 +50,7 @@ describe('StartNextRound', () => {
       nextPhase: 'entry',
       nextRound: 2,
       requesterId: organizerId,
+      isAdmin: false,
     });
 
     expect(result.ok).toBe(true);
@@ -68,10 +71,26 @@ describe('StartNextRound', () => {
       nextPhase: 'presentation',
       nextRound: 2,
       requesterId: organizerId,
+      isAdmin: false,
     });
 
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.value.phase).toBe('presentation');
+  });
+
+  it('isAdmin=true なら非オーガナイザーでも ok を返す', async () => {
+    const { eventRepo, phasePublisher } = makeRepos();
+    const useCase = new StartNextRound(eventRepo, phasePublisher);
+
+    const result = await useCase.execute({
+      eventId,
+      nextPhase: 'entry',
+      nextRound: 2,
+      requesterId: adminId,
+      isAdmin: true,
+    });
+
+    expect(result.ok).toBe(true);
   });
 
   it('イベントが見つからない場合 err(NotFoundError) を返す', async () => {
@@ -86,13 +105,14 @@ describe('StartNextRound', () => {
       nextPhase: 'entry',
       nextRound: 2,
       requesterId: organizerId,
+      isAdmin: false,
     });
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBeInstanceOf(NotFoundError);
   });
 
-  it('オーガナイザー以外は err(ForbiddenError) を返す', async () => {
+  it('オーガナイザー以外かつ isAdmin=false は err(ForbiddenError) を返す', async () => {
     const { eventRepo, phasePublisher } = makeRepos();
     const useCase = new StartNextRound(eventRepo, phasePublisher);
 
@@ -101,10 +121,14 @@ describe('StartNextRound', () => {
       nextPhase: 'entry',
       nextRound: 2,
       requesterId: otherId,
+      isAdmin: false,
     });
 
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.code).toBe('forbidden');
+    if (!result.ok) {
+      expect(result.error).toBeInstanceOf(ForbiddenError);
+      expect((result.error as ForbiddenError).code).toBe('forbidden');
+    }
   });
 
   it('mingling 以外からの遷移は err(InvalidTransitionError) を返す', async () => {
@@ -117,9 +141,26 @@ describe('StartNextRound', () => {
       nextPhase: 'entry',
       nextRound: 2,
       requesterId: organizerId,
+      isAdmin: false,
     });
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBeInstanceOf(InvalidTransitionError);
+  });
+
+  it('phasePublisher.publish が失敗した場合 err を返す', async () => {
+    const { eventRepo, phasePublisher } = makeRepos();
+    vi.mocked(phasePublisher.publish).mockResolvedValue(err(new Error('Broadcast failed')));
+    const useCase = new StartNextRound(eventRepo, phasePublisher);
+
+    const result = await useCase.execute({
+      eventId,
+      nextPhase: 'entry',
+      nextRound: 2,
+      requesterId: organizerId,
+      isAdmin: false,
+    });
+
+    expect(result.ok).toBe(false);
   });
 });
