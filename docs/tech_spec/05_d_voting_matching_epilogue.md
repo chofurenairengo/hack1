@@ -77,6 +77,15 @@
 - **`Gender`**：`female` / `male`（マッチング計算のバランスに使用）
 - **`TableAssignmentPlan`**：計算結果の値オブジェクト
   - 構造：`tables: { seatCount, members: UserId[] }[]`、`leftovers: UserId[]`（はぐれ発生時）、`score: number`
+- **`TablePair`**：被紹介者テーブルと紹介者専用テーブルの 1:1 対応
+  - 構造：`index`、`presenteeTable: { members: PresenteeId[], seatCount }`、`presenterTable: { members: PresenterId[], seatCount }`
+  - `presenterTable.seatCount` は対応する `presenteeTable.seatCount` と同値
+- **`FullTableAssignmentPlan`**：`ComputeMatching` の保存・返却単位
+  - 構造：`tablePairs: TablePair[]`、`presenteeScore: number`
+  - `TableAssignmentPlan` は k-partition 2-opt コアの出力、`FullTableAssignmentPlan` は紹介者専用テーブル導出後の出力
+- **`PresenteeToPresenterMap`**：被紹介者 ID から対応する紹介者 ID への 1:1 マップ
+  - 構造：`ReadonlyMap<PresenteeId, PresenterId>`
+  - 入力バリデーションで紹介者 + 被紹介者のペア必須を保証したうえで、`ComputeMatching` が後処理に渡す
 
 ### 2.3 ドメインサービス：マッチングアルゴリズム
 
@@ -87,7 +96,7 @@
 #### 2.3.1 入力
 
 - `VoteSet`：`{ participants: Participant[], votes: Vote[], policy: SeatPolicy }` (`src/domain/matching/types.ts` 参照)
-  - `participants` は presenter / presentee 双方を含む。アルゴリズム内で `role === 'presentee'` にフィルタして使用
+  - `participants` は `ComputeMatching` が `role === 'presentee'` のみに絞り込んでから渡す。k-partition 2-opt コアは紹介者を受け取らない
   - `policy.allowedTableSizes`：`readonly [3, 4]`（通常）または `readonly [3, 4, 5]`（N=5 のみ）
 - `seed`：再現性のための乱数シード
 
@@ -97,14 +106,14 @@
 
 #### 2.3.3 制約
 
-- **硬制約**（必ず満たす）：全被紹介者が 1 テーブルに属する（紹介者は卓不参加）／テーブル人数 3〜5 名（N=5 のみ 5 を許容）
+- **硬制約**（必ず満たす）：全被紹介者がいずれか 1 つのテーブルに必ず割り当てられる（未割当なし、紹介者は k-partition 対象外）／テーブル人数 {3, 4}（N=5 のみ {5} を例外許可）
 - **軟制約**（最大化・最小化、辞書式優先順）：①相互投票 rank 合計を最大 ②男女バランス 2:2 を最大 ③混合卓を最大（加重和で近似、乗数比で辞書式を担保）
 - **優先度重み**：`mutualWeight[priority1 × priority2]` を設計
   - 例：お互い 1 位 = 9 点 / 1 位×2 位 = 6 / 2 位×2 位 = 4 / 1 位×3 位 = 3 / 2 位×3 位 = 2 / 3 位×3 位 = 1 / 片方のみ投票 = 0.2（促進でなく軽いヒント）
 
 #### 2.3.4 アルゴリズムフロー
 
-1. **初期解の生成**：男女交互にランダムシャッフルして 3〜5 人ずつ分配（seed 固定）
+1. **初期解の生成**：男女交互にランダムシャッフルして `policy.allowedTableSizes` に従って分配（seed 固定）
 2. **2-opt 反復**：
    - ランダムに 2 テーブルを選び、一方のメンバー 1 名と他方のメンバー 1 名を交換した場合のスコアを計算
    - 改善する場合のみ採用
@@ -123,7 +132,15 @@
 
 - ドメインサービスは I/O を持たないため、固定入力に対して期待出力を厳密検証可能
 - テストフィクスチャ：8 名 / 12 名 / 16 名 / 20 名、全員相互投票 / 誰も投票しない / 一方通行のみ
-- 検証観点：人数制約、男女バランス（許容範囲）、`exclusionPairs` 遵守、スコアが初期解より悪くならない
+- 検証観点：人数制約、紹介者が k-partition 入力に含まれないこと、男女バランスのソフト目的、スコアが初期解より悪くならないこと
+
+#### 2.3.7 後処理関数
+
+`derivePresenterTables(presenteeAssignment: TableAssignmentPlan, pairMap: PresenteeToPresenterMap): readonly PresenterTableAssignment[]`
+
+- `presenteeAssignment.tables` の各被紹介者メンバーを `pairMap` で対応する紹介者に変換し、同じ `seatCount` の紹介者専用テーブルを生成する
+- 純粋関数として実装し、DB I/O やイベント状態更新は `ComputeMatching` 側に閉じ込める
+- `pairMap` に存在しない被紹介者 ID が含まれる場合はハード制約違反として失敗させる
 
 ### 2.4 リポジトリインタフェース
 
@@ -159,12 +176,14 @@
   - 入力：`eventId`、`roundNumber`
   - 処理：
     1. `events.status` が `intermission` であることを確認
-    2. `voters` = `event_entries` の audience+presenter を取得
-    3. `votes` = `votes` テーブル（RLS を **service role** でバイパスして全投票を取得：この Use Case のみ service role client を使う）
-    4. `exclusionPairs` = 登壇ペア `presentation_pairs` を除外対象に
-    5. `KPartition2OptService.execute(...)` を呼ぶ
-    6. 結果を `TableRepository.saveAssignment` でトランザクション内で書き込み
-    7. 完了を C のイベント状態サービスに通知（`intermission → mingling`）
+    2. `EntryRepository` / `VoteRepository` から参加者・投票データを取得
+    3. 登壇ペアから `PresenteeToPresenterMap` を構築し、紹介者 + 被紹介者の 1:1 対応が揃っていることを検証
+    4. `participants` から `role === 'presentee'` のみを抽出し、k-partition 2-opt コアに渡す `VoteSet` を構築
+    5. `KPartition2OptService.execute(...)` を呼び、被紹介者テーブルの `TableAssignmentPlan` を得る
+    6. `derivePresenterTables(presenteeAssignment, pairMap)` で紹介者専用テーブルを導出
+    7. `tablePairs` と `presenteeScore` を持つ `FullTableAssignmentPlan` を構築
+    8. `TableRepository.saveAssignment` に `FullTableAssignmentPlan` を渡し、被紹介者テーブルは `table_type = 'presentee'`、紹介者専用テーブルは `table_type = 'presenter'` として同一トランザクションで保存する。対応関係は `paired_table_id` で相互参照する
+    9. 完了を C のイベント状態サービスに通知（`intermission → mingling`）
   - エラー：計算失敗時はトランザクションを rollback し `voting` に戻さず、管理者にエラー表示（再実行可能）
 
 ### 3.3 マッチ成立・通知
@@ -180,7 +199,10 @@
 
 - **`GetMyTable`**：自分の所属テーブル取得（交流画面初期表示）
   - 入力：`eventId`、`userId`
-  - 戻り値：テーブル ID + メンバー一覧（アバタープリセットキー同梱、B が円卓配置に使用）
+  - 処理：`userId` のイベント内ロールを取得し、返すテーブル種別を切り替える
+    - `role === 'presentee'`：`table_type = 'presentee'` の所属テーブルを返す
+    - `role === 'presenter'`：`table_type = 'presenter'` の所属テーブルを返す
+  - 戻り値：テーブル ID + `table_type` + メンバー一覧（アバタープリセットキー同梱、B が円卓配置に使用）
 
 ### 3.5 アワード
 
@@ -339,18 +361,18 @@ src/infrastructure/matching/
 
 01 §6 / §7 で定義したテーブルのうち、D が書き込みを伴うもの：
 
-| テーブル                   | 主要カラム                                                                  | RLS INSERT                                                            | RLS SELECT                                                                          |
-| -------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `votes`                    | `event_id`, `voter_id`, `votee_id`, `priority`                              | `voter_id = auth.uid()`                                               | `voter_id = auth.uid()` のみ（※ `ComputeMatching` は service role でバイパス）      |
-| `recommendations`          | `event_id`, `introducer_id`, `introducee_id`, `recommended_user_id`, `rank` | `introducer_id = auth.uid()`                                          | 紹介者本人 / 被紹介者本人 / イベント管理者                                          |
-| `tables` / `table_members` | 席情報                                                                      | service role のみ                                                     | イベント参加者は自分のテーブルのメンバーのみ（`user_id IN (自テーブルのメンバー)`） |
-| `matches`                  | `user_a_id`, `user_b_id`                                                    | service role のみ（`FinalizeMatches`）                                | `user_a_id = auth.uid() OR user_b_id = auth.uid()`                                  |
-| `match_messages`           | `match_id`, `sender_id`, `body`                                             | `sender_id = auth.uid() AND sender_id IN matches.user_a_id/user_b_id` | マッチ当事者のみ                                                                    |
-| `photo_reveal_consents`    | `match_id`, `user_id`, `state`                                              | `user_id = auth.uid()`                                                | `user_id = auth.uid()` のみ（※ `RequestRevealUrl` は service role でバイパス）      |
-| `profile_photos`           | `user_id`, `storage_path`, `is_primary`                                     | `user_id = auth.uid()`                                                | `user_id = auth.uid()` のみ（相手閲覧は署名URL経由）                                |
-| `reports`                  | `reporter_id`, `target_user_id`                                             | `reporter_id = auth.uid()`                                            | 管理者のみ                                                                          |
-| `blocks`                   | `blocker_id`, `blocked_id`                                                  | `blocker_id = auth.uid()`                                             | `blocker_id = auth.uid()`                                                           |
-| `awards`                   | `event_id`, `pair_id`, `kind`                                               | service role のみ                                                     | イベント参加者                                                                      |
+| テーブル                         | 主要カラム                                                                  | RLS INSERT                                                            | RLS SELECT                                                                                          |
+| -------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `votes`                          | `event_id`, `voter_id`, `votee_id`, `priority`                              | `voter_id = auth.uid()`                                               | `voter_id = auth.uid()` のみ（※ `ComputeMatching` は service role でバイパス）                      |
+| `recommendations`                | `event_id`, `introducer_id`, `introducee_id`, `recommended_user_id`, `rank` | `introducer_id = auth.uid()`                                          | 紹介者本人 / 被紹介者本人 / イベント管理者                                                          |
+| `event_tables` / `table_members` | 席情報、`table_type`、`paired_table_id`、`seat_count`                       | service role のみ                                                     | 自分が所属するテーブルのメンバーのみ。`table_type = 'presenter'` の行は紹介者本人だけが SELECT 可能 |
+| `matches`                        | `user_a_id`, `user_b_id`                                                    | service role のみ（`FinalizeMatches`）                                | `user_a_id = auth.uid() OR user_b_id = auth.uid()`                                                  |
+| `match_messages`                 | `match_id`, `sender_id`, `body`                                             | `sender_id = auth.uid() AND sender_id IN matches.user_a_id/user_b_id` | マッチ当事者のみ                                                                                    |
+| `photo_reveal_consents`          | `match_id`, `user_id`, `state`                                              | `user_id = auth.uid()`                                                | `user_id = auth.uid()` のみ（※ `RequestRevealUrl` は service role でバイパス）                      |
+| `profile_photos`                 | `user_id`, `storage_path`, `is_primary`                                     | `user_id = auth.uid()`                                                | `user_id = auth.uid()` のみ（相手閲覧は署名URL経由）                                                |
+| `reports`                        | `reporter_id`, `target_user_id`                                             | `reporter_id = auth.uid()`                                            | 管理者のみ                                                                                          |
+| `blocks`                         | `blocker_id`, `blocked_id`                                                  | `blocker_id = auth.uid()`                                             | `blocker_id = auth.uid()`                                                                           |
+| `awards`                         | `event_id`, `pair_id`, `kind`                                               | service role のみ                                                     | イベント参加者                                                                                      |
 
 ### 7.1 RLS の検証手順（01 §11 ハンドオフチェックリストにも含む）
 
@@ -424,7 +446,7 @@ src/infrastructure/matching/
 ### 12.1 Domain
 
 - `k-partition-2-opt.service.ts` を 8/12/16/20 名の固定フィクスチャで回帰テスト
-- 検証：人数制約、男女バランス許容、`exclusionPairs` 遵守、スコア単調改善、seed 固定時の決定性
+- 検証：人数制約、紹介者除外、N=5 例外、男女バランスのソフト目的、スコア単調改善、seed 固定時の決定性
 - ランダムフィクスチャでも硬制約違反が出ないことを 1000 ケース検証
 
 ### 12.2 Application
@@ -482,6 +504,7 @@ src/infrastructure/matching/
 - 本技術仕様書 `02_メンバーA_スライド・管理.md` §6（SlideThumbnail 再利用）
 - 本技術仕様書 `03_メンバーB_アバター.md` §4（AvatarPreset）§5（RoundtableScene）
 - 本技術仕様書 `04_メンバーC_リアルタイム.md` §9（状態遷移発火点）§10（チャット Broadcast）§5.4（スタンプ集計結果受け渡し）
+- 本技術仕様書 `06_d_presenter_table_extension.md` §4（型定義候補）§5（DB保存方針）§6（Use Case 変更点）
 - Supabase Auth / RLS / Storage（署名付きURL）公式ドキュメント
 - Resend 公式ドキュメント（送信API / Webhook）
 - Next.js Server Actions 公式ドキュメント

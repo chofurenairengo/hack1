@@ -4,7 +4,7 @@
 
 **Hack-1 グランプリ 2026 「トモコイ」** — 友人紹介型ライブマッチングイベントプラットフォーム。最終発表 **2026-05-10 (オフライン・東大福武ホール)**。審査コンセプトは **Move Hands. Move Hearts.**
 
-紹介者が被紹介者の友人を **AI 生成スライド + VRM アバター** でピッチし、オーディエンスが投票、**独自 k-partition 2-opt アルゴリズム**で 3-4 人テーブルに自動配置、**1:1 チャット + 双方合意で顔写真公開** というライブ体験プロダクト。
+紹介者が被紹介者の友人を **AI 生成スライド + VRM アバター** でピッチし、オーディエンスが投票、**独自 k-partition 2-opt アルゴリズム**で被紹介者を 3-4 人テーブル（N=5 のみ 5 人卓例外）に自動配置する。紹介者は対応する専用テーブルへ後処理で自動配置し、**1:1 チャット + 双方合意で顔写真公開** へつなぐライブ体験プロダクト。
 
 ---
 
@@ -20,7 +20,7 @@
 
 4. **入力は `votes` テーブルのみ**。`recommendations` (紹介者推薦フラグ) はアルゴリズムに渡さず、UI 上の星マーク表示に留める。
 5. **外部マッチングライブラリ (`matching`, `networkx` 等) を使わない**。`src/domain/matching/` に純粋 TypeScript で自前実装する (技術アピールの根拠)。
-6. **紹介者は交流タイムの卓に不参加** (ラウンジ/休憩エリア)。マッチング対象は被紹介者のみ。**相互投票 rank 合計をソフト最優先 (辞書式①)**、男女 2:2 は辞書式②。ハード制約は「全被紹介者配置」「卓人数 {3,4}、N=5 のみ {5} 例外」のみ。イベント参加は紹介者+被紹介者の 2 人組必須。
+6. **紹介者は k-partition 2-opt の対象外**。マッチング対象は被紹介者のみで、紹介者は被紹介者テーブルに対応する**紹介者専用テーブル**へ後処理で自動配置する。**相互投票 rank 合計をソフト最優先 (辞書式①)**、男女 2:2 は辞書式②。ハード制約は「全被紹介者配置」「卓人数 {3,4}、N=5 のみ {5} 例外」のみ。イベント参加は紹介者+被紹介者の 2 人組必須。
 7. **決定性 (seed 固定で再現可能)**、**N=20 で 100-300ms、Vercel Serverless 10 秒タイムアウト以内**。
 
 ### AI (Gemini 3 Flash 4 役割プロンプト)
@@ -110,7 +110,7 @@ hack1/
 │   └── config.toml
 ├── docs/
 │   ├── tomokoi_spec_v5_3.md
-│   └── tech_spec/00-05*.md
+│   └── tech_spec/00-06*.md
 ├── public/
 ├── .claude/                      # Claude Code 設定 (本ディレクトリ)
 ├── CLAUDE.md                     # 本ファイル
@@ -184,6 +184,7 @@ export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string
 - [docs/tech_spec/03_b_avator.md](docs/tech_spec/03_b_avator.md) — メンバーB: VRM アバター・MediaPipe
 - [docs/tech_spec/04_c_realtime.md](docs/tech_spec/04_c_realtime.md) — メンバーC: Realtime Broadcast + WebRTC
 - [docs/tech_spec/05_d_voting_matching_epilogue.md](docs/tech_spec/05_d_voting_matching_epilogue.md) — メンバーD: 投票・k-partition・チャット・顔写真同意
+- [docs/tech_spec/06_d_presenter_table_extension.md](docs/tech_spec/06_d_presenter_table_extension.md) — メンバーD: 紹介者専用テーブル拡張仕様 (PR #65/#70 変更の一次情報)
 
 ---
 

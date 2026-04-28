@@ -27,11 +27,11 @@
 
 ### 1.3 連携ポイント（要合意事項）
 
-| 連携先 | 内容 | 期日 |
-|-------|------|------|
-| メンバーB | プレゼン画面のスライド描画領域サイズ・アバター両脇の配置座標 | Week 2 前半 |
+| 連携先    | 内容                                                                        | 期日              |
+| --------- | --------------------------------------------------------------------------- | ----------------- |
+| メンバーB | プレゼン画面のスライド描画領域サイズ・アバター両脇の配置座標                | Week 2 前半       |
 | メンバーC | スライド同期 Broadcast のメッセージ仕様（現在ページ番号・アクティブペアID） | Week 1 終わりまで |
-| メンバーD | 「盛り上がったで賞」表示をイベント終了画面に埋め込む枠 | Week 3 |
+| メンバーD | 「盛り上がったで賞」表示をイベント終了画面に埋め込む枠                      | Week 3            |
 
 ---
 
@@ -103,17 +103,17 @@ approved                            │ rejectByOrganizer()
 
 `src/application/slide/` 配下。
 
-| Use Case | 入力 | 出力 | 備考 |
-|---------|------|------|------|
-| `GenerateSlideDeckUseCase` | `{ pairId, templateKey, answers: Record<slideNumber, answerText> }` | `SlideDeckDTO` | 初回のAI生成。`status=draft` で保存 |
-| `RegenerateFieldUseCase` | `{ deckId, slideNumber, fieldKey }` | `FieldDTO` | 1フィールドだけ再生成 |
-| `UpdateSlideFieldUseCase` | `{ deckId, slideNumber, fieldKey, value }` | `SlideDeckDTO` | 手動編集 |
-| `UploadSlideImageUseCase` | `{ deckId, slideNumber, slotIndex, fileBlob }` | `SlideImageDTO` | 画像スロットへのアップロード |
-| `SubmitForConfirmationUseCase` | `{ deckId }` | `SlideDeckDTO` | `draft → pending_introducee` |
-| `ConfirmByIntroduceeUseCase` | `{ deckId, decision, reason? }` | `SlideDeckDTO` | 承認 / 修正依頼 / 辞退 |
-| `ApproveByOrganizerUseCase` | `{ deckId }` | `SlideDeckDTO` | 主催者承認 |
-| `RejectByOrganizerUseCase` | `{ deckId, ngCategory, reason }` | `SlideDeckDTO` | 差し戻し |
-| `ExportPptxUseCase` | `{ deckId }` | `PptxFileDTO` | PPTX生成（Week 3 後半以降） |
+| Use Case                       | 入力                                                                | 出力            | 備考                                |
+| ------------------------------ | ------------------------------------------------------------------- | --------------- | ----------------------------------- |
+| `GenerateSlideDeckUseCase`     | `{ pairId, templateKey, answers: Record<slideNumber, answerText> }` | `SlideDeckDTO`  | 初回のAI生成。`status=draft` で保存 |
+| `RegenerateFieldUseCase`       | `{ deckId, slideNumber, fieldKey }`                                 | `FieldDTO`      | 1フィールドだけ再生成               |
+| `UpdateSlideFieldUseCase`      | `{ deckId, slideNumber, fieldKey, value }`                          | `SlideDeckDTO`  | 手動編集                            |
+| `UploadSlideImageUseCase`      | `{ deckId, slideNumber, slotIndex, fileBlob }`                      | `SlideImageDTO` | 画像スロットへのアップロード        |
+| `SubmitForConfirmationUseCase` | `{ deckId }`                                                        | `SlideDeckDTO`  | `draft → pending_introducee`        |
+| `ConfirmByIntroduceeUseCase`   | `{ deckId, decision, reason? }`                                     | `SlideDeckDTO`  | 承認 / 修正依頼 / 辞退              |
+| `ApproveByOrganizerUseCase`    | `{ deckId }`                                                        | `SlideDeckDTO`  | 主催者承認                          |
+| `RejectByOrganizerUseCase`     | `{ deckId, ngCategory, reason }`                                    | `SlideDeckDTO`  | 差し戻し                            |
+| `ExportPptxUseCase`            | `{ deckId }`                                                        | `PptxFileDTO`   | PPTX生成（Week 3 後半以降）         |
 
 ### 3.2 外部ポート
 
@@ -228,15 +228,15 @@ Application 層から見るとこれらはインターフェース。実装は I
 
 ### 6.1 画面一覧
 
-| パス | 画面 | 主要コンポーネント |
-|------|------|----------------|
-| `/slides/new` | テンプレート選択 + 質問入力 | `TemplatePicker`、`QuestionForm` |
-| `/slides/[deckId]/edit` | フィールド編集 + 再生成 + 画像アップロード | `SlideEditor`、`FieldEditor`、`ImageSlotUploader` |
-| `/slides/[deckId]/preview` | 本番レンダリングのプレビュー | `SlideRenderer` |
-| `/slides/[deckId]/confirm` | 被紹介者確認画面 | `SlideRenderer`、`ConfirmActions` |
-| `/admin/slides` | 主催者審査一覧 + 詳細 | `ReviewQueue`、`ReviewPanel` |
-| `/admin/reports` | 通報対応（メンバーDと共用設計、Aが枠組み提供） | `ReportList` |
-| `/admin/events` | イベント管理（一覧・作成） | `EventForm`、`EventList` |
+| パス                       | 画面                                           | 主要コンポーネント                                |
+| -------------------------- | ---------------------------------------------- | ------------------------------------------------- |
+| `/slides/new`              | テンプレート選択 + 質問入力                    | `TemplatePicker`、`QuestionForm`                  |
+| `/slides/[deckId]/edit`    | フィールド編集 + 再生成 + 画像アップロード     | `SlideEditor`、`FieldEditor`、`ImageSlotUploader` |
+| `/slides/[deckId]/preview` | 本番レンダリングのプレビュー                   | `SlideRenderer`                                   |
+| `/slides/[deckId]/confirm` | 被紹介者確認画面                               | `SlideRenderer`、`ConfirmActions`                 |
+| `/admin/slides`            | 主催者審査一覧 + 詳細                          | `ReviewQueue`、`ReviewPanel`                      |
+| `/admin/reports`           | 通報対応（メンバーDと共用設計、Aが枠組み提供） | `ReportList`                                      |
+| `/admin/events`            | イベント管理（一覧・作成）                     | `EventForm`、`EventList`                          |
 
 ### 6.2 SlideRenderer（本番レンダリング）
 
@@ -440,12 +440,12 @@ Application 層から見るとこれらはインターフェース。実装は I
 
 ## 13. スケジュール対応
 
-| Week | タスク |
-|------|--------|
-| Week 1（4/16-4/19、Day 4-7） | 基盤引き継ぎ後、Gemini SDK 素振り、テンプレ5枚構成確定、質問リスト草案 |
-| Week 2（4/20-4/26） | スライド生成〜編集UI 一通り、Gemini 統合、内面エピソード誘導UI、4/25 中間発表 |
-| Week 3（4/27-5/3） | 被紹介者確認画面、主催者管理画面、本番レンダリング、画像スロット。後半で PPTX エクスポート着手（可能なら） |
-| Week 4（5/4-5/10） | 連携テスト、バグ修正、デモ脚本用スライドの準備、管理者運用手順書 |
+| Week                         | タスク                                                                                                     |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Week 1（4/16-4/19、Day 4-7） | 基盤引き継ぎ後、Gemini SDK 素振り、テンプレ5枚構成確定、質問リスト草案                                     |
+| Week 2（4/20-4/26）          | スライド生成〜編集UI 一通り、Gemini 統合、内面エピソード誘導UI、4/25 中間発表                              |
+| Week 3（4/27-5/3）           | 被紹介者確認画面、主催者管理画面、本番レンダリング、画像スロット。後半で PPTX エクスポート着手（可能なら） |
+| Week 4（5/4-5/10）           | 連携テスト、バグ修正、デモ脚本用スライドの準備、管理者運用手順書                                           |
 
 ---
 
@@ -459,6 +459,6 @@ Application 層から見るとこれらはインターフェース。実装は I
 - 本技術仕様書 `05_メンバーD_投票・マッチング・事後.md` §9（アワード表示連携）
 - Google Gen AI SDK（`@google/genai`）公式ドキュメント
 - pptxgenjs 公式ドキュメント
-- Next.js 14 App Router 公式ドキュメント（Server Action）
+- Next.js 16 App Router 公式ドキュメント（Server Action）
 
 ---
