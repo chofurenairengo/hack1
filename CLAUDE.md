@@ -226,6 +226,7 @@ export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string
 | `/member-d-matching`   | D レーン (投票・k-partition・チャット・顔写真同意)                         |
 | `/match-test`          | k-partition 2-opt ゴールデンテスト + N=20 ベンチ回帰                       |
 | `/integration-test`    | Phase 4 E2E (Playwright)                                                   |
+| `/multi-review [path...]` | 4 視点並列レビュー: コード品質 / セキュリティ / アーキ / パフォーマンス + 専門エージェント自動追加 |
 
 ---
 
