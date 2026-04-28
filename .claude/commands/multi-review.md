@@ -29,7 +29,8 @@ git diff main...HEAD
 
 **引数ありの場合:**
 ```bash
-find <path...> -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.sql" \)
+git diff main...HEAD --name-only -- <path...>
+git diff main...HEAD -- <path...>
 ```
 
 変更ファイル一覧から以下を判定し、追加起動する専門エージェントを決める:

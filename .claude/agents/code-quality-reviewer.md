@@ -131,11 +131,12 @@ Grep: "use server" in src/app/
 ### 9. shadcn/ui 手編集禁止チェック
 
 ```
-Grep: // edited in src/components/ui/
-Grep: // modified in src/components/ui/
+Grep: // edited in src/
+Grep: // modified in src/
+Grep: @shadcn in src/
 ```
 
-`src/components/ui/` 配下のファイルが手編集されていたら → **⚠️ High**
+`src/` 配下の shadcn/ui 生成ファイル (ファイルパスに `components/ui/` を含むもの、または shadcn 生成ヘッダを含むもの) が手編集されていたら → **⚠️ High**
 
 ### 10. console.log のコミット漏れチェック
 

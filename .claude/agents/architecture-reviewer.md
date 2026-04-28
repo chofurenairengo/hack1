@@ -17,17 +17,9 @@ model: opus
 
 変更ファイルを確認し、各メンバーの管轄外ディレクトリへの変更がないか確認:
 
-```
-メンバー A 管轄: src/domain/slide/, src/application/slide/, src/infrastructure/ai/gemini/,
-                src/infrastructure/pptx/, src/types/api.ts, supabase/migrations/
-メンバー B 管轄: src/infrastructure/avatar/, src/components/features/avatar/
-メンバー C 管轄: src/infrastructure/realtime/, src/infrastructure/webrtc/,
-                src/stores/realtime/, src/hooks/useEventPhase.ts,
-                src/hooks/useSlideSync.ts, src/hooks/useStampBroadcast.ts,
-                src/hooks/useAvatarSync.ts
-メンバー D 管轄: src/domain/matching/, src/domain/vote/, src/domain/match/,
-                src/application/vote/, src/application/matching/, src/application/match/
-```
+1. `.claude/rules/team-boundaries.md` を Read して最新のメンバー別管轄ディレクトリを確認する
+2. 変更ファイル一覧を各メンバーの管轄と照合する
+3. 管轄外の変更、または複数メンバーの管轄にまたがる変更があれば指摘する
 
 変更ファイルが複数メンバーの管轄にまたがっていれば → **⚠️ High** (合意の有無を確認)
 
