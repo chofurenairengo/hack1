@@ -37,11 +37,15 @@ export async function startNextRoundAction(
     return { ok: false, code: 'unauthenticated', message: '認証が必要です' };
   }
 
-  const { data: userRecord } = await supabase
+  const { data: userRecord, error: userRecordError } = await supabase
     .from('users')
     .select('is_admin')
     .eq('id', user.id)
     .single();
+
+  if (userRecordError) {
+    return { ok: false, code: 'internal_error', message: '管理者権限の確認に失敗しました' };
+  }
 
   const useCase = new StartNextRound(new SupabaseEventRepository(), new SupabasePhasePublisher());
 

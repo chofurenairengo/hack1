@@ -11,6 +11,7 @@ import type { NotFoundError } from '@/domain/shared/errors/not-found.error';
 import type { ForbiddenError } from '@/domain/shared/errors/forbidden.error';
 import { ok, err } from '@/domain/shared/types/result';
 import { NotFoundError as NotFoundErr } from '@/domain/shared/errors/not-found.error';
+import { ForbiddenError as ForbiddenErr } from '@/domain/shared/errors/forbidden.error';
 import { createSupabaseServerClient } from '../client-server';
 import type { Database } from '@/types/supabase';
 import { asEventId, asUserId } from '@/shared/types/ids';
@@ -88,7 +89,10 @@ export class SupabaseEventRepository implements EventRepository {
       .single();
 
     if (error || !data) {
-      return err(new NotFoundErr(`イベント ${id} の更新に失敗しました`));
+      if (error?.code === '42501') {
+        return err(new ForbiddenErr(`イベント ${id} を更新する権限がありません`));
+      }
+      return err(new NotFoundErr(`イベント ${id} が見つかりません`));
     }
 
     return ok(toEventRecord(data));

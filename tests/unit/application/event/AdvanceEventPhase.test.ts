@@ -193,5 +193,45 @@ describe('AdvanceEventPhase', () => {
       expect(result.ok).toBe(false);
       expect(matchingTrigger.trigger).not.toHaveBeenCalled();
     });
+
+    it('matchingTrigger.trigger が失敗した場合 err を返す', async () => {
+      const { eventRepo, phasePublisher, matchingTrigger } = makeRepos();
+      vi.mocked(matchingTrigger.trigger).mockResolvedValue(err(new Error('trigger failed')));
+      const useCase = new AdvanceEventPhase(eventRepo, phasePublisher, matchingTrigger);
+
+      const result = await useCase.execute({
+        eventId,
+        nextPhase: 'intermission',
+        round: 1,
+        requesterId: organizerId,
+        isAdmin: false,
+      });
+
+      expect(result.ok).toBe(false);
+    });
+
+    it('既に nextPhase と同じフェーズの場合は updatePhase をスキップして publish を呼ぶ', async () => {
+      const record = { ...baseRecord, phase: 'intermission' as const };
+      const { eventRepo, phasePublisher, matchingTrigger } = makeRepos(record);
+      const useCase = new AdvanceEventPhase(eventRepo, phasePublisher, matchingTrigger);
+
+      const result = await useCase.execute({
+        eventId,
+        nextPhase: 'intermission',
+        round: 1,
+        requesterId: organizerId,
+        isAdmin: false,
+      });
+
+      expect(result.ok).toBe(true);
+      expect(eventRepo.updatePhase).not.toHaveBeenCalled();
+      expect(phasePublisher.publish).toHaveBeenCalledWith(
+        eventId,
+        'intermission',
+        1,
+        expect.any(String),
+      );
+      expect(matchingTrigger.trigger).toHaveBeenCalledWith(eventId);
+    });
   });
 });

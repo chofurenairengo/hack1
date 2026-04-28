@@ -163,4 +163,22 @@ describe('StartNextRound', () => {
 
     expect(result.ok).toBe(false);
   });
+
+  it('既に nextPhase と同じフェーズの場合は updatePhase をスキップして publish を呼ぶ', async () => {
+    const record = { ...minglingRecord, phase: 'entry' as const };
+    const { eventRepo, phasePublisher } = makeRepos(record);
+    const useCase = new StartNextRound(eventRepo, phasePublisher);
+
+    const result = await useCase.execute({
+      eventId,
+      nextPhase: 'entry',
+      nextRound: 2,
+      requesterId: organizerId,
+      isAdmin: false,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(eventRepo.updatePhase).not.toHaveBeenCalled();
+    expect(phasePublisher.publish).toHaveBeenCalledWith(eventId, 'entry', 2, expect.any(String));
+  });
 });

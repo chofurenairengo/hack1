@@ -42,17 +42,20 @@ export class StartNextRound {
       return err(new ForbiddenErr('イベントを進行できるのはオーガナイザーまたは管理者のみです'));
     }
 
-    const event = Event.create({
-      id: record.id,
-      currentPhase: record.phase,
-      status: 'live',
-      currentRound: input.nextRound,
-    });
-    const transition = event.transitionTo(input.nextPhase);
-    if (!transition.ok) return transition;
+    // Skip DB update if already at nextPhase — allows publish retry after partial failure
+    if (record.phase !== input.nextPhase) {
+      const event = Event.create({
+        id: record.id,
+        currentPhase: record.phase,
+        status: 'live',
+        currentRound: input.nextRound,
+      });
+      const transition = event.transitionTo(input.nextPhase);
+      if (!transition.ok) return transition;
 
-    const updated = await this.eventRepo.updatePhase(input.eventId, input.nextPhase);
-    if (!updated.ok) return updated;
+      const updated = await this.eventRepo.updatePhase(input.eventId, input.nextPhase);
+      if (!updated.ok) return updated;
+    }
 
     const published = await this.phasePublisher.publish(
       input.eventId,
