@@ -11,6 +11,7 @@ export type GeneratedSlide = Readonly<{
   slideIndex: number;
   title: string;
   body: string;
+  presenterScript: string;
   layoutHint: Readonly<{
     icon: string;
     colorPalette: string;
