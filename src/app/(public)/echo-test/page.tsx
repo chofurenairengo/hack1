@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { asEventId, asPairId, asDeckId } from '@/shared/types/ids';
 import type { StampKind } from '@/domain/stamp/value-objects/stamp-kind.vo';
