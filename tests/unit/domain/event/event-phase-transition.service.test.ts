@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { EventPhaseTransitionService } from '@/domain/event/services/event-phase-transition.service';
 import { InvalidTransitionError } from '@/domain/event/errors/invalid-transition.error';
-import type { EventPhase } from '@/domain/event/value-objects/event-phase.vo';
+import { EventPhaseSchema, type EventPhase } from '@/domain/event/value-objects/event-phase.vo';
+import { ALLOWED_TRANSITIONS } from '@/domain/event/value-objects/phase-transition.vo';
+
+const ALL_PHASES = EventPhaseSchema.options;
 
 describe('EventPhaseTransitionService', () => {
   describe('canTransition — 許可された遷移', () => {
@@ -12,8 +15,8 @@ describe('EventPhaseTransitionService', () => {
       ['voting', 'intermission'],
       ['intermission', 'mingling'],
       ['mingling', 'closing'],
-      ['mingling', 'entry'],       // 次ラウンド (最初から)
-      ['mingling', 'presentation'], // 次ラウンド (プレゼンから)
+      ['mingling', 'entry'],
+      ['mingling', 'presentation'],
     ];
 
     it.each(validPaths)('%s → %s は ok を返す', (from, to) => {
@@ -22,20 +25,14 @@ describe('EventPhaseTransitionService', () => {
     });
   });
 
-  describe('canTransition — 禁止遷移', () => {
-    const invalidPaths: [EventPhase, EventPhase][] = [
-      ['voting', 'mingling'],       // intermission をスキップ
-      ['voting', 'closing'],
-      ['presentation', 'closing'],
-      ['entry', 'voting'],
-      ['pre_event', 'presentation'],
-      ['closing', 'entry'],         // 終了後に戻れない
-      ['closing', 'pre_event'],
-      ['intermission', 'voting'],   // 逆行
-      ['mingling', 'voting'],       // 逆行
-    ];
+  describe('canTransition — 禁止遷移 (全パターン)', () => {
+    const forbiddenPaths: [EventPhase, EventPhase][] = ALL_PHASES.flatMap((from) =>
+      ALL_PHASES.filter(
+        (to) => !(ALLOWED_TRANSITIONS[from] as readonly EventPhase[]).includes(to),
+      ).map((to): [EventPhase, EventPhase] => [from, to]),
+    );
 
-    it.each(invalidPaths)('%s → %s は err(InvalidTransitionError) を返す', (from, to) => {
+    it.each(forbiddenPaths)('%s → %s は err(InvalidTransitionError) を返す', (from, to) => {
       const result = EventPhaseTransitionService.canTransition(from, to);
       expect(result.ok).toBe(false);
       if (!result.ok) {

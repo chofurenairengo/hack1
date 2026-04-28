@@ -2,8 +2,8 @@ import type { EventId } from '@/shared/types/ids';
 import type { EventPhase } from '../value-objects/event-phase.vo';
 import type { EventStatus } from '../value-objects/event-status.vo';
 import type { Result } from '@/domain/shared/types/result';
-import { ok, err } from '@/domain/shared/types/result';
-import { ALLOWED_TRANSITIONS } from '../value-objects/phase-transition.vo';
+import { ok } from '@/domain/shared/types/result';
+import { EventPhaseTransitionService } from '../services/event-phase-transition.service';
 import { InvalidTransitionError } from '../errors/invalid-transition.error';
 
 export type EventProps = Readonly<{
@@ -37,9 +37,8 @@ export class Event {
   }
 
   transitionTo(nextPhase: EventPhase): Result<Event, InvalidTransitionError> {
-    if (!ALLOWED_TRANSITIONS[this.props.currentPhase].includes(nextPhase)) {
-      return err(new InvalidTransitionError(this.props.currentPhase, nextPhase));
-    }
+    const check = EventPhaseTransitionService.canTransition(this.props.currentPhase, nextPhase);
+    if (!check.ok) return check;
     return ok(new Event({ ...this.props, currentPhase: nextPhase }));
   }
 }
