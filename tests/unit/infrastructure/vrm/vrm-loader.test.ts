@@ -18,7 +18,15 @@ vi.mock('@pixiv/three-vrm', () => ({
 import type { VRM } from '@pixiv/three-vrm';
 import { loadVrm, vrmLoader } from '@/infrastructure/vrm/vrm-loader';
 
-const mockVrm = { scene: {} } as unknown as VRM;
+const mockGeometryDispose = vi.fn();
+const mockMaterialDispose = vi.fn();
+const mockVrmScene = {
+  traverse: vi.fn((fn: (obj: object) => void) => {
+    fn({ isMesh: true, geometry: { dispose: mockGeometryDispose }, material: { dispose: mockMaterialDispose } });
+    fn({ isMesh: false });
+  }),
+};
+const mockVrm = { scene: mockVrmScene } as unknown as VRM;
 
 describe('VRMLoader', () => {
   beforeEach(() => {
@@ -56,6 +64,21 @@ describe('VRMLoader', () => {
       expect(first.ok && second.ok && first.value === second.value).toBe(true);
     });
 
+    it('同一 URL への並列 load は loadAsync を 1 回だけ呼ぶ', async () => {
+      let resolve!: (val: unknown) => void;
+      const deferred = new Promise((r) => { resolve = r; });
+      mockLoadAsync.mockReturnValueOnce(deferred);
+
+      const url = '/vrm/parallel.vrm';
+      const p1 = loadVrm(url);
+      const p2 = loadVrm(url);
+      resolve({ userData: { vrm: mockVrm } });
+      const [r1, r2] = await Promise.all([p1, p2]);
+
+      expect(mockLoadAsync).toHaveBeenCalledTimes(1);
+      expect(r1.ok && r2.ok && r1.value === r2.value).toBe(true);
+    });
+
     it('userData.vrm が存在しない場合に parse_failed を返す', async () => {
       mockLoadAsync.mockResolvedValueOnce({ userData: {} });
 
@@ -83,6 +106,18 @@ describe('VRMLoader', () => {
   });
 
   describe('dispose', () => {
+    it('dispose(url) で Three.js のジオメトリとマテリアルが解放される', async () => {
+      mockLoadAsync.mockResolvedValueOnce({ userData: { vrm: mockVrm } });
+
+      const url = '/vrm/test.vrm';
+      await loadVrm(url);
+      vrmLoader.dispose(url);
+
+      expect(mockVrmScene.traverse).toHaveBeenCalled();
+      expect(mockGeometryDispose).toHaveBeenCalled();
+      expect(mockMaterialDispose).toHaveBeenCalled();
+    });
+
     it('dispose(url) 後に再ロードすると loadAsync が再度呼ばれる', async () => {
       mockLoadAsync.mockResolvedValue({ userData: { vrm: mockVrm } });
 

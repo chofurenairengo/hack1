@@ -1,5 +1,7 @@
 import type { AvatarPreset } from '@/domain/avatar/entities/avatar-preset.entity';
 
+export type AvatarPresetKey = 'sample_a_woman' | 'sample_b_woman' | 'sample_c_man' | 'student_boy' | 'student_girl';
+
 export const AVATAR_PRESETS: readonly AvatarPreset[] = [
   {
     key: 'sample_a_woman',
@@ -43,6 +45,6 @@ export const AVATAR_PRESETS: readonly AvatarPreset[] = [
   },
 ];
 
-export function getPresetByKey(key: string): AvatarPreset | undefined {
+export function getPresetByKey(key: AvatarPresetKey): AvatarPreset | undefined {
   return AVATAR_PRESETS.find((p) => p.key === key);
 }

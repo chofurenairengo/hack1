@@ -99,7 +99,7 @@
 `src/infrastructure/vrm/preset-registry.ts`：
 
 - `AvatarPreset` 配列を export
-- 各プリセットの `vrmUrl` は `/vrm/preset-<NN>.vrm`
+- 各プリセットの `vrmUrl` は `/vrm/<key>.vrm`（例: `/vrm/sample_a_woman.vrm`）
 - ライセンス情報を README にも転記
 
 ### 4.3 ブレンドシェイプマッパー
@@ -283,8 +283,8 @@ React Three Fiber ベースで記述、R3F の `Canvas` を Page 側で呼び出
 
 ## 9. アセット配置
 
-- VRM ファイル：`public/vrm/preset-<NN>.vrm`
-- サムネイル：`public/vrm/preset-<NN>-thumb.jpg`
+- VRM ファイル：`public/vrm/<key>.vrm`（例: `public/vrm/sample_a_woman.vrm`）
+- サムネイル：`public/vrm/<key>.webp`（例: `public/vrm/sample_a_woman.webp`）
 - MediaPipe モデル：`public/mediapipe/face_landmarker.task`
 - ライセンス情報：`public/vrm/LICENSES.md`
 
