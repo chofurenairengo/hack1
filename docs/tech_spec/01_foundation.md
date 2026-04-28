@@ -1329,7 +1329,7 @@ Phase 0 終了時、以下を **全員で** 確認：
 - 本技術仕様書 `04_c_realtime.md` §4（Realtime チャンネル仕様）§6（WebRTCシグナリング）
 - 本技術仕様書 `05_d_voting_matching_epilogue.md` §6（マッチングアルゴリズム）§11（顔写真 RLS 詳細）
 - 本技術仕様書 `06_d_presenter_table_extension.md` §4（型定義候補）§5（DB保存方針）
-- Next.js 14 App Router 公式ドキュメント（Server Action / Route Handler）
+- Next.js 16 App Router 公式ドキュメント（Server Action / Route Handler）
 - Supabase 公式ドキュメント（Auth / Realtime / Storage / RLS）
 - Conventional Commits 仕様 v1.0
 - Clean Architecture（Robert C. Martin, 2017）— 3層分割と依存ルール

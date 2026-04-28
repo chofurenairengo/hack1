@@ -763,7 +763,7 @@ Supabase Storage に RLS（Row Level Security）で非公開保存
 
 | 領域           | 技術                                                          |
 | -------------- | ------------------------------------------------------------- |
-| フロントエンド | Next.js 14 (App Router) + TypeScript                          |
+| フロントエンド | Next.js 16 (App Router) + TypeScript                          |
 | UI             | shadcn/ui + Tailwind CSS                                      |
 | バックエンド   | Supabase（PostgreSQL + Auth + Realtime + Storage）            |
 | ホスティング   | **Vercel 一元化**（Cloud Run・Supabase Edge Function 不使用） |

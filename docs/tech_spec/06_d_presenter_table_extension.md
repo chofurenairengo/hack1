@@ -24,7 +24,7 @@ Issue #90 で定義された完全な制約・目的関数：
 
 **ハード制約（必須充足）**
 
-1. 全被紹介者を 1 卓に配置する
+1. 全被紹介者がいずれかの卓に割り当てられる（未割当なし）
 2. 卓サイズ ∈ {3, 4}（被紹介者 N=5 のみ {5} を例外許可）
 3. イベント参加は紹介者+被紹介者の2人組必須（入力バリデーションで保証）
 
@@ -186,7 +186,7 @@ interface FullTableAssignmentPlan {
  * 被紹介者 ID → 紹介者 ID のマップ（1:1 対応）
  * ComputeMatching Use Case が entries テーブルから生成して後処理に渡す
  */
-type PresenteeToPresentersMap = ReadonlyMap<PresenteeId, PresenterId>;
+type PresenteeToPresenterMap = ReadonlyMap<PresenteeId, PresenterId>;
 ```
 
 ### 4.3 既存型への影響
@@ -264,7 +264,7 @@ ALTER TABLE event_tables
 ```
 derivePresenterTables(
   presenteeAssignment: TableAssignmentPlan,
-  pairMap: PresenteeToPresentersMap
+  pairMap: PresenteeToPresenterMap
 ): readonly PresenterTableAssignment[]
 ```
 
@@ -305,7 +305,7 @@ derivePresenterTables(
 | 基本ケース       | 被紹介者テーブルのメンバーに対応する紹介者が正しく配置されること                               |
 | 1:1 対応検証     | `tablePairs[i].presenteeTable` と `tablePairs[i].presenterTable` の `seatCount` が一致すること |
 | 全紹介者配置     | 全ての紹介者が必ずいずれかの紹介者専用テーブルに現れること（漏れなし・重複なし）               |
-| ペアマップ整合性 | `PresenteeToPresentersMap` に存在しない被紹介者 ID が入力された場合にエラーを返すこと          |
+| ペアマップ整合性 | `PresenteeToPresenterMap` に存在しない被紹介者 ID が入力された場合にエラーを返すこと           |
 | 純粋性           | 同じ入力に対して常に同じ出力を返すこと（副作用なし）                                           |
 
 ### 7.2 ComputeMatching 統合テスト（追加観点）

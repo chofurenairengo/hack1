@@ -83,7 +83,7 @@
 - **`FullTableAssignmentPlan`**：`ComputeMatching` の保存・返却単位
   - 構造：`tablePairs: TablePair[]`、`presenteeScore: number`
   - `TableAssignmentPlan` は k-partition 2-opt コアの出力、`FullTableAssignmentPlan` は紹介者専用テーブル導出後の出力
-- **`PresenteeToPresentersMap`**：被紹介者 ID から対応する紹介者 ID への 1:1 マップ
+- **`PresenteeToPresenterMap`**：被紹介者 ID から対応する紹介者 ID への 1:1 マップ
   - 構造：`ReadonlyMap<PresenteeId, PresenterId>`
   - 入力バリデーションで紹介者 + 被紹介者のペア必須を保証したうえで、`ComputeMatching` が後処理に渡す
 
@@ -106,7 +106,7 @@
 
 #### 2.3.3 制約
 
-- **硬制約**（必ず満たす）：全被紹介者が 1 テーブルに属する（紹介者は k-partition 対象外）／テーブル人数 {3, 4}（N=5 のみ {5} を例外許可）
+- **硬制約**（必ず満たす）：全被紹介者がいずれか 1 つのテーブルに必ず割り当てられる（未割当なし、紹介者は k-partition 対象外）／テーブル人数 {3, 4}（N=5 のみ {5} を例外許可）
 - **軟制約**（最大化・最小化、辞書式優先順）：①相互投票 rank 合計を最大 ②男女バランス 2:2 を最大 ③混合卓を最大（加重和で近似、乗数比で辞書式を担保）
 - **優先度重み**：`mutualWeight[priority1 × priority2]` を設計
   - 例：お互い 1 位 = 9 点 / 1 位×2 位 = 6 / 2 位×2 位 = 4 / 1 位×3 位 = 3 / 2 位×3 位 = 2 / 3 位×3 位 = 1 / 片方のみ投票 = 0.2（促進でなく軽いヒント）
@@ -136,7 +136,7 @@
 
 #### 2.3.7 後処理関数
 
-`derivePresenterTables(presenteeAssignment: TableAssignmentPlan, pairMap: PresenteeToPresentersMap): readonly PresenterTableAssignment[]`
+`derivePresenterTables(presenteeAssignment: TableAssignmentPlan, pairMap: PresenteeToPresenterMap): readonly PresenterTableAssignment[]`
 
 - `presenteeAssignment.tables` の各被紹介者メンバーを `pairMap` で対応する紹介者に変換し、同じ `seatCount` の紹介者専用テーブルを生成する
 - 純粋関数として実装し、DB I/O やイベント状態更新は `ComputeMatching` 側に閉じ込める
@@ -177,7 +177,7 @@
   - 処理：
     1. `events.status` が `intermission` であることを確認
     2. `EntryRepository` / `VoteRepository` から参加者・投票データを取得
-    3. 登壇ペアから `PresenteeToPresentersMap` を構築し、紹介者 + 被紹介者の 1:1 対応が揃っていることを検証
+    3. 登壇ペアから `PresenteeToPresenterMap` を構築し、紹介者 + 被紹介者の 1:1 対応が揃っていることを検証
     4. `participants` から `role === 'presentee'` のみを抽出し、k-partition 2-opt コアに渡す `VoteSet` を構築
     5. `KPartition2OptService.execute(...)` を呼び、被紹介者テーブルの `TableAssignmentPlan` を得る
     6. `derivePresenterTables(presenteeAssignment, pairMap)` で紹介者専用テーブルを導出
