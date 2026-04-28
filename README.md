@@ -9,6 +9,7 @@
 - Node.js 20+
 - pnpm 9+
 - [Supabase CLI](https://supabase.com/docs/guides/cli)
+- [Git LFS](https://git-lfs.com/) (VRM モデルファイル管理用)
 
 ### 手順
 
@@ -21,6 +22,9 @@ npx
 をつける必要がある
 
 ```bash
+# Git LFS の初期設定 (初回クローン後に一度だけ実行)
+git lfs install
+
 # 依存パッケージのインストール
 pnpm install
 
