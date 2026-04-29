@@ -23,4 +23,8 @@ export const channelName = {
 
   /** 1:1 チャット即時配信チャンネル */
   chat: (matchId: MatchId): string => `chat:${matchId}`,
+
+  /** プレゼン枠 WebRTC シグナリングチャンネル (登壇ペア単位、Presence 有効) */
+  presenterSignal: (eventId: EventId, pairId: PairId): string =>
+    `presenter:${eventId}:${pairId}:signal`,
 } as const;

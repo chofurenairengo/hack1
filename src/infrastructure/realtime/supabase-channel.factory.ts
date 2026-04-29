@@ -2,8 +2,10 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { createSupabaseBrowserClient } from '@/infrastructure/supabase/client-browser';
 
 export type ChannelOptions = {
-  /** Presence を有効化する (event:*:state チャンネルのみ) */
+  /** Presence を有効化する */
   presence?: boolean;
+  /** Presence の一意 key。未指定時はチャンネル名を使う。 */
+  presenceKey?: string;
 };
 
 class SupabaseChannelFactory {
@@ -26,7 +28,7 @@ class SupabaseChannelFactory {
     if (cached) return cached;
 
     const channel = options.presence
-      ? this.client.channel(name, { config: { presence: { key: name } } })
+      ? this.client.channel(name, { config: { presence: { key: options.presenceKey ?? name } } })
       : this.client.channel(name);
 
     this.channels.set(name, channel);
