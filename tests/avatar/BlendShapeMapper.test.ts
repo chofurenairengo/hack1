@@ -80,7 +80,7 @@ describe('BlendShapeMapper', () => {
       expect(result.aa).toBe(0.8);
     });
 
-    it('surprised: eyeWideLeft=1.0, eyeWideRight=1.0, browInnerUp=0.5 → 0.88', () => {
+    it('surprised: eyeWideLeft=1.0, eyeWideRight=1.0, browInnerUp=0.5 → 0.75', () => {
       const result = mapper.mapBlendShapes(
         makeArkit({ eyeWideLeft: 1.0, eyeWideRight: 1.0, browInnerUp: 0.5 }),
       );
