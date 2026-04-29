@@ -13,6 +13,9 @@ export type SignalMessage = {
 };
 
 type SignalHandler = (msg: SignalMessage) => void;
+type PeersChangedHandler = (peerIds: string[]) => void;
+
+const SUBSCRIBE_TIMEOUT_MS = 10_000;
 
 /**
  * プレゼン枠の WebRTC シグナリングを Supabase Realtime Broadcast で行う。
@@ -27,8 +30,12 @@ export class SignalingChannel {
     this.userId = userId;
   }
 
-  async subscribe(onSignal: SignalHandler): Promise<void> {
-    const channel = channelFactory.get(this.name, { presence: true });
+  private get channelOptions() {
+    return { presence: true, presenceKey: this.userId };
+  }
+
+  async subscribe(onSignal: SignalHandler, onPeersChanged?: PeersChangedHandler): Promise<void> {
+    const channel = channelFactory.get(this.name, this.channelOptions);
 
     channel.on('broadcast', { event: 'signal' }, ({ payload }: { payload: unknown }) => {
       const msg = payload as SignalMessage;
@@ -37,18 +44,41 @@ export class SignalingChannel {
       }
     });
 
+    if (onPeersChanged) {
+      const notifyPeersChanged = () => onPeersChanged(this.getPeers());
+      channel.on('presence', { event: 'sync' }, notifyPeersChanged);
+      channel.on('presence', { event: 'join' }, notifyPeersChanged);
+      channel.on('presence', { event: 'leave' }, notifyPeersChanged);
+    }
+
     await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const timeoutId = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new Error('signaling channel subscribe timed out'));
+      }, SUBSCRIBE_TIMEOUT_MS);
+
       channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') resolve();
-        else if (status === 'CHANNEL_ERROR') reject(new Error('signaling channel error'));
+        if (settled) return;
+        if (status === 'SUBSCRIBED') {
+          settled = true;
+          clearTimeout(timeoutId);
+          resolve();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          settled = true;
+          clearTimeout(timeoutId);
+          reject(new Error(`signaling channel subscribe failed: ${status}`));
+        }
       });
     });
 
     await channel.track({ userId: this.userId, joinedAt: Date.now() });
+    onPeersChanged?.(this.getPeers());
   }
 
   async send(msg: Omit<SignalMessage, 'from'>): Promise<void> {
-    const channel = channelFactory.get(this.name, { presence: true });
+    const channel = channelFactory.get(this.name, this.channelOptions);
     await channel.send({
       type: 'broadcast',
       event: 'signal',
@@ -58,12 +88,16 @@ export class SignalingChannel {
 
   /** Presence から自分以外の参加者 userId を返す */
   getPeers(): string[] {
-    const channel = channelFactory.get(this.name, { presence: true });
+    const channel = channelFactory.get(this.name, this.channelOptions);
     const state = channel.presenceState<{ userId: string }>();
-    return Object.values(state)
-      .flat()
-      .map((p) => p.userId)
-      .filter((id) => id !== this.userId);
+    return [
+      ...new Set(
+        Object.values(state)
+          .flat()
+          .map((p) => p.userId)
+          .filter((id) => id !== this.userId),
+      ),
+    ];
   }
 
   async unsubscribe(): Promise<void> {

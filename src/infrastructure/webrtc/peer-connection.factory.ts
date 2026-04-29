@@ -42,7 +42,5 @@ export async function addIceCandidate(
   pc: RTCPeerConnection,
   candidate: RTCIceCandidateInit,
 ): Promise<void> {
-  if (pc.remoteDescription) {
-    await pc.addIceCandidate(new RTCIceCandidate(candidate));
-  }
+  await pc.addIceCandidate(new RTCIceCandidate(candidate));
 }

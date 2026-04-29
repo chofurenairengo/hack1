@@ -39,14 +39,22 @@ export async function joinPresenterRoomAction(
     return { ok: false, code: 'unauthenticated', message: '認証が必要です' };
   }
 
-  const { error: entryError } = await supabase
+  const { data: entry, error: entryError } = await supabase
     .from('entries')
     .select('id')
     .eq('event_id', parsed.data.eventId)
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (entryError) {
+    return {
+      ok: false,
+      code: 'internal_error',
+      message: '参加情報の取得に失敗しました',
+    };
+  }
+
+  if (!entry) {
     return { ok: false, code: 'forbidden', message: 'このイベントに参加していません' };
   }
 

@@ -23,18 +23,26 @@ const nextConfig: NextConfig = {
     ];
     return [
       {
+        source: '/((?!events).*)',
+        headers: [
+          ...commonSecurityHeaders,
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=()' },
+        ],
+      },
+      {
+        // Local WebRTC smoke-test page needs microphone access.
+        source: '/test-webrtc',
+        headers: [
+          ...commonSecurityHeaders,
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(self)' },
+        ],
+      },
+      {
         // Event pages require camera (VRM/MediaPipe) and microphone (WebRTC)
         source: '/events/:path*',
         headers: [
           ...commonSecurityHeaders,
           { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self)' },
-        ],
-      },
-      {
-        source: '/((?!events).*)',
-        headers: [
-          ...commonSecurityHeaders,
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=()' },
         ],
       },
     ];

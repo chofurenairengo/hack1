@@ -24,9 +24,12 @@ type RemoteStreamHandler = (stream: MediaStream, peerId: string) => void;
 export class PresenterMesh {
   private readonly signaling: SignalingChannel;
   private readonly audioManager: AudioTrackManager;
+  private readonly userId: string;
   private readonly role: PeerRole;
   private readonly iceConfig: IceConfig;
   private readonly peers = new Map<string, RTCPeerConnection>();
+  private readonly pendingCandidates = new Map<string, RTCIceCandidateInit[]>();
+  private readonly offeredPeers = new Set<string>();
 
   private state: MeshState = 'idle';
   private onStateChange?: StateChangeHandler;
@@ -41,6 +44,7 @@ export class PresenterMesh {
   ) {
     this.signaling = new SignalingChannel(eventId, pairId, userId);
     this.audioManager = new AudioTrackManager();
+    this.userId = userId;
     this.role = role;
     this.iceConfig = iceConfig;
   }
@@ -60,25 +64,26 @@ export class PresenterMesh {
       await this.audioManager.acquireMic();
     }
 
-    await this.signaling.subscribe(async (msg) => {
-      if (msg.type === 'offer' && msg.sdp) {
-        await this.handleOffer(msg.from, msg.sdp);
-      } else if (msg.type === 'answer' && msg.sdp) {
-        await this.handleAnswer(msg.from, msg.sdp);
-      } else if (msg.type === 'candidate' && msg.candidate) {
-        await this.handleCandidate(msg.from, msg.candidate);
-      }
-    });
-
-    const peers = this.signaling.getPeers();
-    for (const peerId of peers) {
-      await this.initiateConnectionTo(peerId);
-    }
-
-    if (peers.length > 0) this.setState('connected');
+    await this.signaling.subscribe(
+      async (msg) => {
+        if (msg.type === 'offer' && msg.sdp) {
+          await this.handleOffer(msg.from, msg.sdp);
+        } else if (msg.type === 'answer' && msg.sdp) {
+          await this.handleAnswer(msg.from, msg.sdp);
+        } else if (msg.type === 'candidate' && msg.candidate) {
+          await this.handleCandidate(msg.from, msg.candidate);
+        }
+      },
+      (peerIds) => {
+        void this.syncPeers(peerIds);
+      },
+    );
   }
 
   private async initiateConnectionTo(peerId: string): Promise<void> {
+    if (!this.shouldCreateOffer(peerId) || this.offeredPeers.has(peerId)) return;
+    this.offeredPeers.add(peerId);
+
     const pc = this.buildPeerConnection(peerId);
     if (this.role === 'presenter') {
       this.audioManager.addTracksTo(pc);
@@ -93,6 +98,7 @@ export class PresenterMesh {
       this.audioManager.addTracksTo(pc);
     }
     const answer = await createAnswer(pc, sdp);
+    await this.flushPendingCandidates(from);
     await this.signaling.send({ type: 'answer', to: from, sdp: answer });
     this.setState('connected');
   }
@@ -101,15 +107,54 @@ export class PresenterMesh {
     const pc = this.peers.get(from);
     if (!pc) return;
     await applyAnswer(pc, sdp);
+    await this.flushPendingCandidates(from);
+    this.setState('connected');
   }
 
-  private async handleCandidate(
-    from: string,
-    candidate: RTCIceCandidateInit,
-  ): Promise<void> {
-    const pc = this.peers.get(from);
-    if (!pc) return;
+  private async handleCandidate(from: string, candidate: RTCIceCandidateInit): Promise<void> {
+    const pc = this.buildPeerConnection(from);
+    if (!pc.remoteDescription) {
+      this.queueCandidate(from, candidate);
+      return;
+    }
     await addIceCandidate(pc, candidate);
+  }
+
+  private async syncPeers(peerIds: string[]): Promise<void> {
+    const currentPeerIds = new Set(peerIds);
+    for (const peerId of this.peers.keys()) {
+      if (!currentPeerIds.has(peerId)) {
+        this.closePeer(peerId);
+      }
+    }
+
+    await Promise.all(peerIds.map((peerId) => this.initiateConnectionTo(peerId)));
+  }
+
+  private shouldCreateOffer(peerId: string): boolean {
+    return this.userId < peerId;
+  }
+
+  private queueCandidate(peerId: string, candidate: RTCIceCandidateInit): void {
+    const candidates = this.pendingCandidates.get(peerId) ?? [];
+    candidates.push(candidate);
+    this.pendingCandidates.set(peerId, candidates);
+  }
+
+  private async flushPendingCandidates(peerId: string): Promise<void> {
+    const pc = this.peers.get(peerId);
+    const candidates = this.pendingCandidates.get(peerId);
+    if (!pc || !pc.remoteDescription || !candidates?.length) return;
+
+    this.pendingCandidates.delete(peerId);
+    await Promise.all(candidates.map((candidate) => addIceCandidate(pc, candidate)));
+  }
+
+  private closePeer(peerId: string): void {
+    this.peers.get(peerId)?.close();
+    this.peers.delete(peerId);
+    this.pendingCandidates.delete(peerId);
+    this.offeredPeers.delete(peerId);
   }
 
   private buildPeerConnection(peerId: string): RTCPeerConnection {
@@ -156,6 +201,8 @@ export class PresenterMesh {
       pc.close();
     }
     this.peers.clear();
+    this.pendingCandidates.clear();
+    this.offeredPeers.clear();
     this.audioManager.stop();
     await this.signaling.unsubscribe();
   }
