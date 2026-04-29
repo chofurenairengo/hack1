@@ -16,8 +16,6 @@ export type FaceLandmarkerHandle = Readonly<{
   close: () => void;
 }>;
 
-type CreateOptions = Readonly<{ wasmBasePath?: string }>;
-
 // ---------------------------------------------------------------------------
 // Blendshape mapping helpers
 // ---------------------------------------------------------------------------
