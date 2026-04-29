@@ -54,17 +54,13 @@ describe('AvatarTile', () => {
 
   it('returns null when vrm is loading', () => {
     mockUseVRM.mockReturnValue({ vrm: null, error: null, loading: true });
-    const { container } = render(
-      <AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} lookAt={null} />,
-    );
+    const { container } = render(<AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} />);
     expect(container.firstChild).toBeNull();
   });
 
   it('returns null when vrm load failed', () => {
     mockUseVRM.mockReturnValue({ vrm: null, error: 'failed', loading: false });
-    const { container } = render(
-      <AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} lookAt={null} />,
-    );
+    const { container } = render(<AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} />);
     expect(container.firstChild).toBeNull();
   });
 
@@ -73,7 +69,7 @@ describe('AvatarTile', () => {
     const vrm = makeVrm({ setValue });
     mockUseVRM.mockReturnValue({ vrm, error: null, loading: false });
 
-    render(<AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} lookAt={null} />);
+    render(<AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} />);
 
     expect(setValue).toHaveBeenCalledWith('happy', 0.5);
     expect(setValue).toHaveBeenCalledWith('sad', 0);
@@ -84,7 +80,7 @@ describe('AvatarTile', () => {
     const vrm = makeVrm();
     mockUseVRM.mockReturnValue({ vrm, error: null, loading: false });
 
-    render(<AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} lookAt={null} />);
+    render(<AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} />);
 
     expect(vrm.update).toHaveBeenCalledWith(0.016);
   });
@@ -93,7 +89,7 @@ describe('AvatarTile', () => {
     const vrm = makeVrm();
     mockUseVRM.mockReturnValue({ vrm, error: null, loading: false });
 
-    render(<AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} lookAt={null} />);
+    render(<AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} />);
 
     expect(mockInvalidate).toHaveBeenCalled();
   });
@@ -102,18 +98,14 @@ describe('AvatarTile', () => {
     const vrm = makeVrm(null);
     mockUseVRM.mockReturnValue({ vrm, error: null, loading: false });
 
-    expect(() =>
-      render(<AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} lookAt={null} />),
-    ).not.toThrow();
+    expect(() => render(<AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} />)).not.toThrow();
   });
 
   it('renders a primitive object for the vrm scene', () => {
     const vrm = makeVrm();
     mockUseVRM.mockReturnValue({ vrm, error: null, loading: false });
 
-    const { container } = render(
-      <AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} lookAt={null} />,
-    );
+    const { container } = render(<AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} />);
     expect(container).toBeDefined();
   });
 });

@@ -53,8 +53,8 @@ describe('useVRM', () => {
 
   it('calls dispose on unmount', async () => {
     mockLoadVrm.mockResolvedValue({ ok: true, value: fakeVrm });
-    const { unmount } = renderHook(() => useVRM('/vrm/test.vrm'));
-    await waitFor(() => {});
+    const { unmount, result } = renderHook(() => useVRM('/vrm/test.vrm'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
     unmount();
     expect(mockDispose).toHaveBeenCalledWith('/vrm/test.vrm');
   });
@@ -67,10 +67,10 @@ describe('useVRM', () => {
 
   it('disposes old url when url changes', async () => {
     mockLoadVrm.mockResolvedValue({ ok: true, value: fakeVrm });
-    const { rerender } = renderHook(({ url }: { url: string | null }) => useVRM(url), {
+    const { rerender, result } = renderHook(({ url }: { url: string | null }) => useVRM(url), {
       initialProps: { url: '/vrm/first.vrm' },
     });
-    await waitFor(() => {});
+    await waitFor(() => expect(result.current.loading).toBe(false));
     rerender({ url: '/vrm/second.vrm' });
     expect(mockDispose).toHaveBeenCalledWith('/vrm/first.vrm');
   });
@@ -94,8 +94,6 @@ describe('useVRM', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     resolveStale({ ok: true, value: staleVrm });
-    await waitFor(() => {});
-
-    expect(result.current.vrm).toBe(fakeVrm);
+    await waitFor(() => expect(result.current.vrm).toBe(fakeVrm));
   });
 });

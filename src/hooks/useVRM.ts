@@ -19,7 +19,11 @@ export function useVRM(url: string | null): UseVRMResult {
     let active = true;
 
     loadVrm(url).then((r) => {
-      if (!active) return;
+      if (!active) {
+        // unmount後にキャッシュへ登録された場合は即 dispose してリークを防ぐ
+        if (r.ok) vrmLoader.dispose(url);
+        return;
+      }
       if (r.ok) {
         setResult({ url, vrm: r.value, error: null });
       } else {

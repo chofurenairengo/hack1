@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useVRM } from '@/hooks/useVRM';
 import type { ExpressionPayload } from '@/domain/avatar/value-objects/expression.payload';
@@ -5,23 +6,26 @@ import type { ExpressionPayload } from '@/domain/avatar/value-objects/expression
 interface AvatarTileProps {
   vrmUrl: string;
   weights: ExpressionPayload['weights'];
-  lookAt: ExpressionPayload['lookAt'] | null;
 }
 
 export function AvatarTile({ vrmUrl, weights }: AvatarTileProps) {
   const { vrm } = useVRM(vrmUrl);
+  const prevWeightsRef = useRef<ExpressionPayload['weights'] | null>(null);
 
   useFrame((state, delta) => {
     if (!vrm) return;
 
-    if (vrm.expressionManager) {
-      for (const [key, value] of Object.entries(weights)) {
-        vrm.expressionManager.setValue(key, value);
-      }
-    }
-
     vrm.update(delta);
-    state.invalidate();
+
+    if (prevWeightsRef.current !== weights) {
+      prevWeightsRef.current = weights;
+      if (vrm.expressionManager) {
+        for (const [key, value] of Object.entries(weights)) {
+          vrm.expressionManager.setValue(key, value);
+        }
+      }
+      state.invalidate();
+    }
   });
 
   if (!vrm) return null;

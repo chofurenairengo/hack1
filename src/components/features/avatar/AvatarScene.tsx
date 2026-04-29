@@ -100,18 +100,18 @@ export function AvatarScene({ eventId, pairId, selfUserId, selfPresetKey }: Avat
   }, []);
 
   if (!preset) {
-    return <div aria-label="アバター読み込みエラー" />;
+    return <div role="alert">アバターを読み込めませんでした</div>;
   }
 
   if (cameraError) {
-    return <div role="alert" aria-label={cameraError} />;
+    return <div role="alert">{cameraError}</div>;
   }
 
   return (
     <>
       <video ref={videoRef} autoPlay playsInline muted style={{ display: 'none' }} />
       <AvatarCanvas>
-        <AvatarTile vrmUrl={preset.vrmUrl} weights={blendShapes ?? DEFAULT_WEIGHTS} lookAt={null} />
+        <AvatarTile vrmUrl={preset.vrmUrl} weights={blendShapes ?? DEFAULT_WEIGHTS} />
       </AvatarCanvas>
     </>
   );

@@ -125,21 +125,34 @@ describe('AvatarScene', () => {
   });
 
   it('throttles emit to at most 1 call per 33ms', async () => {
-    setupDefaultMocks(highWeights);
-    await act(async () => {
-      render(<AvatarScene {...defaultProps} />);
-    });
+    const weights1 = { ...highWeights };
+    mockUseFaceLandmarker.mockReturnValue({ blendShapes: weights1, isReady: true, error: null });
+    mockUseAvatarSync.mockReturnValue({ emit: mockEmit, expressions: {} });
+    mockGetPresetByKey.mockReturnValue(fakePreset);
 
-    const firstCallCount = mockEmit.mock.calls.length;
+    let rerenderFn!: (ui: React.ReactElement) => void;
     await act(async () => {
-      vi.advanceTimersByTime(10);
+      const { rerender } = render(<AvatarScene {...defaultProps} />);
+      rerenderFn = rerender;
     });
-    expect(mockEmit.mock.calls.length).toBe(firstCallCount);
+    const countAfterMount = mockEmit.mock.calls.length;
 
+    // New blendShapes reference before 33ms elapses — must not emit again
+    const weights2 = { ...highWeights };
+    mockUseFaceLandmarker.mockReturnValue({ blendShapes: weights2, isReady: true, error: null });
     await act(async () => {
-      vi.advanceTimersByTime(33);
+      rerenderFn(<AvatarScene {...defaultProps} />);
     });
-    expect(mockEmit.mock.calls.length).toBeGreaterThanOrEqual(firstCallCount);
+    expect(mockEmit.mock.calls.length).toBe(countAfterMount);
+
+    // Advance past 33ms, then trigger with a new reference — must emit
+    vi.advanceTimersByTime(33);
+    const weights3 = { ...highWeights };
+    mockUseFaceLandmarker.mockReturnValue({ blendShapes: weights3, isReady: true, error: null });
+    await act(async () => {
+      rerenderFn(<AvatarScene {...defaultProps} />);
+    });
+    expect(mockEmit.mock.calls.length).toBeGreaterThan(countAfterMount);
   });
 
   it('does not emit when prefers-reduced-motion is true and max weight < 0.3', async () => {
