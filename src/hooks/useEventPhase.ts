@@ -13,9 +13,17 @@ export type UseEventPhaseResult = {
   startedAt: string | null;
 };
 
-export function useEventPhase(eventId: EventId): UseEventPhaseResult {
+export type UseEventPhaseOptions = {
+  presenceRole?: 'participant' | 'admin';
+};
+
+export function useEventPhase(
+  eventId: EventId,
+  options: UseEventPhaseOptions = {},
+): UseEventPhaseResult {
   const [state, setState] = useState<StatePayload | null>(null);
   const mountedRef = useRef(true);
+  const presenceRole = options.presenceRole ?? 'participant';
 
   useEffect(() => {
     mountedRef.current = true;
@@ -28,12 +36,19 @@ export function useEventPhase(eventId: EventId): UseEventPhaseResult {
       if (parsed.success) setState(parsed.data);
     });
 
-    channel.subscribe();
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED' && 'track' in channel) {
+        await channel.track({ role: presenceRole, joinedAt: Date.now() });
+      }
+    });
 
     return () => {
       mountedRef.current = false;
+      if ('untrack' in channel) {
+        void channel.untrack();
+      }
     };
-  }, [eventId]);
+  }, [eventId, presenceRole]);
 
   return {
     phase: state?.phase ?? null,
