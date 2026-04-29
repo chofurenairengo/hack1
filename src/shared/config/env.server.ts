@@ -19,3 +19,11 @@ export const envResend = z
     RESEND_FROM_ADDRESS: z.email(),
   })
   .parse(process.env);
+
+export const envTurn = z
+  .object({
+    TURN_URL: z.string().url().optional(),
+    TURN_USERNAME: z.string().optional(),
+    TURN_CREDENTIAL: z.string().optional(),
+  })
+  .parse(process.env);
