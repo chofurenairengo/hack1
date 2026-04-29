@@ -1,19 +1,20 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const NAV_ITEMS = [
   { href: '/admin/slides', label: 'スライド審査' },
   { href: '/admin/events', label: 'イベント管理' },
 ];
 
-interface AdminNavProps {
-  currentPath: string;
-}
+export function AdminNav() {
+  const pathname = usePathname();
 
-export function AdminNav({ currentPath }: AdminNavProps) {
   return (
     <nav className="flex gap-1 border-b border-border mb-6">
       {NAV_ITEMS.map((item) => {
-        const isActive = currentPath.startsWith(item.href);
+        const isActive = pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}
