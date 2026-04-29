@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import type { EventId } from '@/shared/types/ids';
 import type { EventPhase } from '@/domain/event/value-objects/event-phase.vo';
 import { useEventPhase } from '@/hooks/useEventPhase';
@@ -46,6 +46,10 @@ export function recordConsoleError(message: string) {
   window.dispatchEvent(new CustomEvent<ErrorEventDetail>(ERROR_EVENT_NAME, { detail: { message } }));
 }
 
+function makeId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 function nowLabel() {
   return new Date().toLocaleTimeString('ja-JP');
 }
@@ -56,18 +60,18 @@ export function RealtimeLog({ eventId }: Props) {
   const [stampCount, setStampCount] = useState(0);
   const [phaseLog, setPhaseLog] = useState<PhaseLogEntry[]>([]);
   const [errorLog, setErrorLog] = useState<ErrorLogEntry[]>([]);
-  const prevPhaseRef = useRef<EventPhase | null>(null);
-  const prevLastStampRef = useRef<typeof lastStamp>(null);
+  const [prevStamp, setPrevStamp] = useState<typeof lastStamp>(null);
+  const [prevPhase, setPrevPhase] = useState<EventPhase | null>(null);
 
   // Render-time derived state update (React allows this pattern; avoids set-state-in-effect).
-  if (lastStamp !== null && lastStamp !== prevLastStampRef.current) {
-    prevLastStampRef.current = lastStamp;
+  if (lastStamp !== null && lastStamp !== prevStamp) {
+    setPrevStamp(lastStamp);
     setStampCount((prev) => prev + 1);
   }
-  if (phase !== null && phase !== prevPhaseRef.current) {
-    prevPhaseRef.current = phase;
+  if (phase !== null && phase !== prevPhase) {
+    setPrevPhase(phase);
     const entry: PhaseLogEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      id: makeId(),
       phase,
       timestamp: nowLabel(),
     };
