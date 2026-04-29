@@ -72,10 +72,6 @@ describe('useFaceLandmarker', () => {
     expect(result.current.isReady).toBe(false);
     expect(result.current.blendShapes).toBeNull();
     expect(result.current.error).toBeNull();
-
-    act(() => {
-      resolveInit(mocks.handle);
-    });
   });
 
   it('createFaceLandmarker 成功後に isReady が true になる', async () => {
