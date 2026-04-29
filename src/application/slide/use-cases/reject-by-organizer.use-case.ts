@@ -8,7 +8,8 @@ import type { DeckId } from '@/shared/types/ids';
 
 export type RejectByOrganizerError =
   | { readonly code: 'not_found'; readonly message: string }
-  | { readonly code: 'invalid_status'; readonly message: string };
+  | { readonly code: 'invalid_status'; readonly message: string }
+  | { readonly code: 'update_failed'; readonly message: string };
 
 export async function rejectByOrganizerUseCase(
   deckId: DeckId,
@@ -27,9 +28,9 @@ export async function rejectByOrganizerUseCase(
     });
   }
 
-  const updateResult = await deps.repository.update(deckId, { status: 'draft' });
+  const updateResult = await deps.repository.update(deckId, { status: 'rejected' });
   if (!updateResult.ok) {
-    return err({ code: 'not_found', message: updateResult.error.message });
+    return err({ code: 'update_failed', message: updateResult.error.message });
   }
   return ok(updateResult.value);
 }

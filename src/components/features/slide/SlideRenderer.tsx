@@ -16,10 +16,23 @@ type AiGenerationLog = {
   seed: number;
 };
 
+function isGeneratedSlide(s: unknown): s is GeneratedSlide {
+  if (!s || typeof s !== 'object') return false;
+  const v = s as Record<string, unknown>;
+  return (
+    typeof v['title'] === 'string' &&
+    typeof v['body'] === 'string' &&
+    typeof v['presenterScript'] === 'string' &&
+    v['layoutHint'] !== null &&
+    typeof v['layoutHint'] === 'object' &&
+    typeof (v['layoutHint'] as Record<string, unknown>)['colorPalette'] === 'string'
+  );
+}
+
 function isAiLog(value: unknown): value is AiGenerationLog {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
-  return Array.isArray(v['slides']);
+  return Array.isArray(v['slides']) && v['slides'].every(isGeneratedSlide);
 }
 
 interface SlideRendererProps {

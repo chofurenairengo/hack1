@@ -1,12 +1,24 @@
+import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/infrastructure/supabase/client-server';
 import { SupabaseSlideDeckRepository } from '@/infrastructure/supabase/repositories/slide-deck.repository';
 import { AdminNav } from '@/components/features/admin/AdminNav';
 import { AdminSlideItem } from '@/components/features/admin/AdminSlideItem';
-import { headers } from 'next/headers';
 import { asEventId } from '@/shared/types/ids';
 
 export default async function AdminSlidesPage() {
   const supabase = await createSupabaseServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+  if (!profile?.is_admin) redirect('/');
 
   const { data: events } = await supabase
     .from('events')
@@ -22,12 +34,9 @@ export default async function AdminSlidesPage() {
 
   const pendingDecks = allDecks.filter((d) => d.status === 'pending_organizer');
 
-  const headersList = await headers();
-  const pathname = headersList.get('x-pathname') ?? '/admin/slides';
-
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
-      <AdminNav currentPath={pathname} />
+      <AdminNav />
 
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">スライド審査</h1>

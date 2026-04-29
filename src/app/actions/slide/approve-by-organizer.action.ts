@@ -7,6 +7,7 @@ import { SupabaseSlideDeckRepository } from '@/infrastructure/supabase/repositor
 import { asDeckId } from '@/shared/types/ids';
 import type { DeckId } from '@/shared/types/ids';
 import { createSupabaseServerClient } from '@/infrastructure/supabase/client-server';
+import { createSupabaseAdminClient } from '@/infrastructure/supabase/client-admin';
 
 const schema = z.object({ deckId: z.string().uuid() });
 
@@ -34,12 +35,15 @@ export async function approveByOrganizerAction(
   }
 
   const result = await approveByOrganizerUseCase(asDeckId(parsed.data.deckId), {
-    repository: new SupabaseSlideDeckRepository(),
+    repository: new SupabaseSlideDeckRepository(createSupabaseAdminClient()),
   });
 
   if (!result.ok) {
     if (result.error.code === 'not_found') {
       return { ok: false, code: 'not_found', message: result.error.message };
+    }
+    if (result.error.code === 'update_failed') {
+      return { ok: false, code: 'internal_error', message: result.error.message };
     }
     return { ok: false, code: 'forbidden', message: result.error.message };
   }

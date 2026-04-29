@@ -13,7 +13,8 @@ export type ConfirmByIntroduceeInput = {
 
 export type ConfirmByIntroduceeError =
   | { readonly code: 'not_found'; readonly message: string }
-  | { readonly code: 'invalid_status'; readonly message: string };
+  | { readonly code: 'invalid_status'; readonly message: string }
+  | { readonly code: 'update_failed'; readonly message: string };
 
 export async function confirmByIntroduceeUseCase(
   input: ConfirmByIntroduceeInput,
@@ -35,7 +36,7 @@ export async function confirmByIntroduceeUseCase(
   const nextStatus = input.decision === 'approve' ? 'pending_organizer' : 'draft';
   const updateResult = await deps.repository.update(input.deckId, { status: nextStatus });
   if (!updateResult.ok) {
-    return err({ code: 'not_found', message: updateResult.error.message });
+    return err({ code: 'update_failed', message: updateResult.error.message });
   }
   return ok(updateResult.value);
 }

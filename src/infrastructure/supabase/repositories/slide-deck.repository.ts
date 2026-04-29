@@ -34,8 +34,25 @@ function toRecord(row: {
 }
 
 export class SupabaseSlideDeckRepository implements SlideDeckRepository {
+  private readonly adminClient: ReturnType<
+    (typeof import('@/infrastructure/supabase/client-admin'))['createSupabaseAdminClient']
+  > | null;
+
+  constructor(
+    adminClient?: ReturnType<
+      (typeof import('@/infrastructure/supabase/client-admin'))['createSupabaseAdminClient']
+    >,
+  ) {
+    this.adminClient = adminClient ?? null;
+  }
+
+  private async getClient() {
+    if (this.adminClient) return this.adminClient;
+    return createSupabaseServerClient();
+  }
+
   async findById(id: DeckId): Promise<Result<SlideDeckRecord, NotFoundError>> {
-    const supabase = await createSupabaseServerClient();
+    const supabase = await this.getClient();
     const { data, error } = await supabase.from('slide_decks').select('*').eq('id', id).single();
 
     if (error || !data) {
@@ -45,7 +62,7 @@ export class SupabaseSlideDeckRepository implements SlideDeckRepository {
   }
 
   async findByPair(pairId: PairId): Promise<Result<SlideDeckRecord, NotFoundError>> {
-    const supabase = await createSupabaseServerClient();
+    const supabase = await this.getClient();
     const { data, error } = await supabase
       .from('slide_decks')
       .select('*')
@@ -60,19 +77,22 @@ export class SupabaseSlideDeckRepository implements SlideDeckRepository {
     return ok(toRecord(data));
   }
 
-  async findByEvent(eventId: EventId): Promise<Result<readonly SlideDeckRecord[], never>> {
-    const supabase = await createSupabaseServerClient();
-    const { data } = await supabase
+  async findByEvent(eventId: EventId): Promise<Result<readonly SlideDeckRecord[], NotFoundError>> {
+    const supabase = await this.getClient();
+    const { data, error } = await supabase
       .from('slide_decks')
       .select('*')
       .eq('event_id', eventId)
       .order('created_at', { ascending: true });
 
+    if (error) {
+      return err(new NotFoundError(`Failed to fetch slide decks for event: ${eventId}`));
+    }
     return ok((data ?? []).map(toRecord));
   }
 
-  async create(input: CreateSlideDeckInput): Promise<Result<SlideDeckRecord, never>> {
-    const supabase = await createSupabaseServerClient();
+  async create(input: CreateSlideDeckInput): Promise<Result<SlideDeckRecord, NotFoundError>> {
+    const supabase = await this.getClient();
     const { data, error } = await supabase
       .from('slide_decks')
       .insert({
@@ -84,7 +104,7 @@ export class SupabaseSlideDeckRepository implements SlideDeckRepository {
       .single();
 
     if (error || !data) {
-      throw new Error(`Failed to create SlideDeck: ${error?.message ?? 'unknown'}`);
+      return err(new NotFoundError(`Failed to create SlideDeck: ${error?.message ?? 'unknown'}`));
     }
     return ok(toRecord(data));
   }
@@ -93,7 +113,7 @@ export class SupabaseSlideDeckRepository implements SlideDeckRepository {
     id: DeckId,
     input: UpdateSlideDeckInput,
   ): Promise<Result<SlideDeckRecord, NotFoundError>> {
-    const supabase = await createSupabaseServerClient();
+    const supabase = await this.getClient();
 
     const patch: { status?: string; ai_generation_log?: Json; pptx_storage_path?: string | null } =
       {};

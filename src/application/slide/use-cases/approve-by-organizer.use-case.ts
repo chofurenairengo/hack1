@@ -8,7 +8,8 @@ import type { DeckId } from '@/shared/types/ids';
 
 export type ApproveByOrganizerError =
   | { readonly code: 'not_found'; readonly message: string }
-  | { readonly code: 'invalid_status'; readonly message: string };
+  | { readonly code: 'invalid_status'; readonly message: string }
+  | { readonly code: 'update_failed'; readonly message: string };
 
 export async function approveByOrganizerUseCase(
   deckId: DeckId,
@@ -29,7 +30,7 @@ export async function approveByOrganizerUseCase(
 
   const updateResult = await deps.repository.update(deckId, { status: 'approved' });
   if (!updateResult.ok) {
-    return err({ code: 'not_found', message: updateResult.error.message });
+    return err({ code: 'update_failed', message: updateResult.error.message });
   }
   return ok(updateResult.value);
 }

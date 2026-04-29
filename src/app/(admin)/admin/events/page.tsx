@@ -1,7 +1,6 @@
+import { redirect } from 'next/navigation';
 import { createSupabaseServerClient } from '@/infrastructure/supabase/client-server';
 import { AdminNav } from '@/components/features/admin/AdminNav';
-import { headers } from 'next/headers';
-
 const PHASE_LABELS: Record<string, string> = {
   pre_event: '開催前',
   entry: 'エントリー受付中',
@@ -25,17 +24,26 @@ const PHASE_COLORS: Record<string, string> = {
 export default async function AdminEventsPage() {
   const supabase = await createSupabaseServerClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+  if (!profile?.is_admin) redirect('/');
+
   const { data: events } = await supabase
     .from('events')
     .select('id, title, phase, mode, scheduled_at, created_at')
     .order('created_at', { ascending: false });
 
-  const headersList = await headers();
-  const pathname = headersList.get('x-pathname') ?? '/admin/events';
-
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
-      <AdminNav currentPath={pathname} />
+      <AdminNav />
 
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">イベント管理</h1>
