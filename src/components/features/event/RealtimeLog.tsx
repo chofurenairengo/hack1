@@ -57,24 +57,22 @@ export function RealtimeLog({ eventId }: Props) {
   const [phaseLog, setPhaseLog] = useState<PhaseLogEntry[]>([]);
   const [errorLog, setErrorLog] = useState<ErrorLogEntry[]>([]);
   const prevPhaseRef = useRef<EventPhase | null>(null);
+  const prevLastStampRef = useRef<typeof lastStamp>(null);
 
-  useEffect(() => {
-    if (phase !== null && phase !== prevPhaseRef.current) {
-      prevPhaseRef.current = phase;
-      const entry: PhaseLogEntry = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        phase,
-        timestamp: nowLabel(),
-      };
-      setPhaseLog((prev) => [entry, ...prev].slice(0, MAX_LOG_ENTRIES));
-    }
-  }, [phase]);
-
-  useEffect(() => {
-    if (lastStamp !== null) {
-      setStampCount((prev) => prev + 1);
-    }
-  }, [lastStamp]);
+  // Render-time derived state update (React allows this pattern; avoids set-state-in-effect).
+  if (lastStamp !== null && lastStamp !== prevLastStampRef.current) {
+    prevLastStampRef.current = lastStamp;
+    setStampCount((prev) => prev + 1);
+  }
+  if (phase !== null && phase !== prevPhaseRef.current) {
+    prevPhaseRef.current = phase;
+    const entry: PhaseLogEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      phase,
+      timestamp: nowLabel(),
+    };
+    setPhaseLog((prev) => [entry, ...prev].slice(0, MAX_LOG_ENTRIES));
+  }
 
   useEffect(() => {
     const handleError = (event: Event) => {
