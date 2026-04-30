@@ -39,3 +39,6 @@ supabase/.temp
 
 # Test coverage
 coverage/
+
+# Logs
+Logs/
