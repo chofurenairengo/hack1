@@ -8,16 +8,23 @@ interface AvatarTileProps {
   vrmUrl: string;
   weights: ExpressionPayload['weights'];
   onLoad?: (vrm: VRM) => void;
+  onError?: (msg: string) => void;
 }
 
-export function AvatarTile({ vrmUrl, weights, onLoad }: AvatarTileProps) {
-  const { vrm } = useVRM(vrmUrl);
+export function AvatarTile({ vrmUrl, weights, onLoad, onError }: AvatarTileProps) {
+  const { vrm, error } = useVRM(vrmUrl);
   const prevWeightsRef = useRef<ExpressionPayload['weights'] | null>(null);
   const onLoadRef = useRef(onLoad);
+  const onErrorRef = useRef(onError);
 
   useEffect(() => {
     onLoadRef.current = onLoad;
+    onErrorRef.current = onError;
   });
+
+  useEffect(() => {
+    if (error) onErrorRef.current?.(error);
+  }, [error]);
 
   useEffect(() => {
     prevWeightsRef.current = null;

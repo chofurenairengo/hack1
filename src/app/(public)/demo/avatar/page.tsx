@@ -34,6 +34,7 @@ export default function AvatarDemoPage() {
   const [weights, setWeights] = useState<ExpressionPayload['weights']>(ZERO_WEIGHTS);
   const [headY, setHeadY] = useState(DEFAULT_HEAD_Y);
   const [unavailableExprs, setUnavailableExprs] = useState<ReadonlySet<ExpressionKey>>(new Set());
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const handleAvatarLoad = useCallback((vrm: VRM) => {
     const bbox = new Box3().setFromObject(vrm.scene);
@@ -55,6 +56,7 @@ export default function AvatarDemoPage() {
     setWeights(ZERO_WEIGHTS);
     setHeadY(DEFAULT_HEAD_Y);
     setUnavailableExprs(new Set());
+    setLoadError(null);
   };
 
   return (
@@ -88,9 +90,15 @@ export default function AvatarDemoPage() {
       <AvatarCanvas className="w-full h-[500px] rounded-xl overflow-hidden bg-gray-900 mb-6">
         <PerspectiveCamera makeDefault position={[0, headY, 0.6]} fov={28} />
         <group rotation={[0, Math.PI, 0]}>
-          <AvatarTile vrmUrl={selectedPreset.vrmUrl} weights={weights} onLoad={handleAvatarLoad} />
+          <AvatarTile
+            vrmUrl={selectedPreset.vrmUrl}
+            weights={weights}
+            onLoad={handleAvatarLoad}
+            onError={setLoadError}
+          />
         </group>
       </AvatarCanvas>
+      {loadError && <p className="mt-2 text-sm text-red-400">VRM ロード失敗: {loadError}</p>}
 
       <div className="max-w-md space-y-4">
         <h2 className="text-lg font-semibold">表情</h2>
