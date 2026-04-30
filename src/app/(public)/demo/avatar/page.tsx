@@ -66,6 +66,7 @@ export default function AvatarDemoPage() {
           <button
             key={preset.key}
             onClick={() => handlePresetSelect(preset)}
+            aria-pressed={selectedPreset.key === preset.key}
             className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-colors ${
               selectedPreset.key === preset.key
                 ? 'border-blue-500 bg-blue-900/40'
@@ -97,12 +98,14 @@ export default function AvatarDemoPage() {
           const unavailable = unavailableExprs.has(key);
           return (
             <div key={key} className="flex items-center gap-3">
-              <span
+              <label
+                htmlFor={`weight-${key}`}
                 className={`w-20 text-sm ${unavailable ? 'text-gray-600 line-through' : 'text-gray-400'}`}
               >
                 {key}
-              </span>
+              </label>
               <input
+                id={`weight-${key}`}
                 type="range"
                 min={0}
                 max={1}

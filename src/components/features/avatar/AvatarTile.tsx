@@ -13,10 +13,16 @@ interface AvatarTileProps {
 export function AvatarTile({ vrmUrl, weights, onLoad }: AvatarTileProps) {
   const { vrm } = useVRM(vrmUrl);
   const prevWeightsRef = useRef<ExpressionPayload['weights'] | null>(null);
+  const onLoadRef = useRef(onLoad);
 
   useEffect(() => {
-    if (vrm) onLoad?.(vrm);
-  }, [vrm, onLoad]);
+    onLoadRef.current = onLoad;
+  });
+
+  useEffect(() => {
+    prevWeightsRef.current = null;
+    if (vrm) onLoadRef.current?.(vrm);
+  }, [vrm]);
 
   useFrame((state, delta) => {
     if (!vrm) return;
