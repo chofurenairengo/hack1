@@ -6,10 +6,12 @@ import React from 'react';
 const mockEmit = vi.hoisted(() => vi.fn());
 const mockUseFaceLandmarker = vi.hoisted(() => vi.fn());
 const mockUseAvatarSync = vi.hoisted(() => vi.fn());
+const mockUseLipSync = vi.hoisted(() => vi.fn());
 const mockGetPresetByKey = vi.hoisted(() => vi.fn());
 
 vi.mock('@/hooks/useFaceLandmarker', () => ({ useFaceLandmarker: mockUseFaceLandmarker }));
 vi.mock('@/hooks/useAvatarSync', () => ({ useAvatarSync: mockUseAvatarSync }));
+vi.mock('@/hooks/useLipSync', () => ({ useLipSync: mockUseLipSync }));
 vi.mock('@/infrastructure/vrm/preset-registry', () => ({ getPresetByKey: mockGetPresetByKey }));
 vi.mock('@/components/features/avatar/AvatarCanvas', () => ({
   AvatarCanvas: ({ children }: { children?: React.ReactNode }) => (
@@ -66,6 +68,7 @@ function setupDefaultMocks(blendShapes: Weights | null = null) {
   mockUseFaceLandmarker.mockReturnValue({ blendShapes, isReady: true, error: null });
   mockUseAvatarSync.mockReturnValue({ emit: mockEmit, expressions: {} });
   mockGetPresetByKey.mockReturnValue(fakePreset);
+  mockUseLipSync.mockReturnValue({ rms: 0 });
 }
 
 describe('AvatarScene', () => {
@@ -117,6 +120,7 @@ describe('AvatarScene', () => {
     mockGetPresetByKey.mockReturnValue(undefined);
     mockUseFaceLandmarker.mockReturnValue({ blendShapes: null, isReady: false, error: null });
     mockUseAvatarSync.mockReturnValue({ emit: mockEmit, expressions: {} });
+    mockUseLipSync.mockReturnValue({ rms: 0 });
 
     await act(async () => {
       render(<AvatarScene {...defaultProps} />);
