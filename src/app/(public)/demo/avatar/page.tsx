@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { useLipSync } from '@/hooks/useLipSync';
 import Image from 'next/image';
 import { Box3 } from 'three';
 import { PerspectiveCamera } from '@react-three/drei';
@@ -35,6 +36,25 @@ export default function AvatarDemoPage() {
   const [headY, setHeadY] = useState(DEFAULT_HEAD_Y);
   const [unavailableExprs, setUnavailableExprs] = useState<ReadonlySet<ExpressionKey>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const { rms } = useLipSync(audioStream);
+
+  const startMic = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      audioStreamRef.current = stream;
+      setAudioStream(stream);
+    } catch {
+      // マイク拒否またはデバイスなし — 無音のまま続行
+    }
+  }, []);
+
+  const stopMic = useCallback(() => {
+    audioStreamRef.current?.getTracks().forEach((t) => t.stop());
+    audioStreamRef.current = null;
+    setAudioStream(null);
+  }, []);
 
   const handleAvatarLoad = useCallback((vrm: VRM) => {
     const bbox = new Box3().setFromObject(vrm.scene);
@@ -58,6 +78,13 @@ export default function AvatarDemoPage() {
     setUnavailableExprs(new Set());
     setLoadError(null);
   };
+
+  const AA_AUDIO_WEIGHT = 5.0;
+  const AA_FACE_WEIGHT = 0.7;
+  const blendedAa = audioStream
+    ? Math.max(0, Math.min(1, AA_FACE_WEIGHT * weights.aa + AA_AUDIO_WEIGHT * rms))
+    : weights.aa;
+  const displayWeights = { ...weights, aa: Math.round(blendedAa * 100) / 100 };
 
   return (
     <div className="min-h-screen bg-gray-950 text-white p-6">
@@ -92,7 +119,7 @@ export default function AvatarDemoPage() {
         <group rotation={[0, Math.PI, 0]}>
           <AvatarTile
             vrmUrl={selectedPreset.vrmUrl}
-            weights={weights}
+            weights={displayWeights}
             onLoad={handleAvatarLoad}
             onError={setLoadError}
           />
@@ -133,6 +160,48 @@ export default function AvatarDemoPage() {
             </div>
           );
         })}
+      </div>
+
+      <div className="max-w-md mt-6">
+        <h2 className="text-lg font-semibold mb-3">リップシンク</h2>
+        <div className="flex items-center gap-4 mb-2">
+          {audioStream ? (
+            <button onClick={stopMic} className="px-4 py-1.5 rounded bg-red-600 text-white text-sm">
+              停止
+            </button>
+          ) : (
+            <button
+              onClick={startMic}
+              className="px-4 py-1.5 rounded bg-indigo-600 text-white text-sm"
+            >
+              🎤 マイクを開始
+            </button>
+          )}
+        </div>
+        {audioStream && (
+          <div className="space-y-1 text-sm text-gray-300">
+            <div className="flex items-center gap-2">
+              <span className="w-16">RMS</span>
+              <div className="flex-1 bg-gray-700 rounded h-2">
+                <div
+                  className="bg-green-400 h-2 rounded"
+                  style={{ width: `${Math.min(100, rms * 100)}%` }}
+                />
+              </div>
+              <span className="w-10 text-right">{rms.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-16">aa (blend)</span>
+              <div className="flex-1 bg-gray-700 rounded h-2">
+                <div
+                  className="bg-yellow-400 h-2 rounded"
+                  style={{ width: `${Math.min(100, blendedAa * 100)}%` }}
+                />
+              </div>
+              <span className="w-10 text-right">{blendedAa.toFixed(2)}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
