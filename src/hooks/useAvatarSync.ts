@@ -35,6 +35,7 @@ export function useAvatarSync(eventId: EventId, pairId: PairId): UseAvatarSyncRe
 
     return () => {
       mountedRef.current = false;
+      void channelFactory.remove(name);
     };
   }, [eventId, pairId]);
 
