@@ -113,7 +113,7 @@ describe('FaceLandmarkerHandle.detect', () => {
     expect(handle.detect(fakeVideo(), 100)).toBeNull();
   });
 
-  it('blendshapes を weights にマッピングする', async () => {
+  it('blendshapes を arkit52 スコアマップとして返す', async () => {
     mockDetectForVideo.mockReturnValue({
       faceBlendshapes: [
         {
@@ -129,11 +129,12 @@ describe('FaceLandmarkerHandle.detect', () => {
     const handle = await createFaceLandmarker('/mediapipe');
     const result = handle.detect(fakeVideo(), 100);
     expect(result).not.toBeNull();
-    expect(result!.weights.happy).toBeCloseTo(0.7, 2);
-    expect(result!.weights.aa).toBeCloseTo(0.5, 2);
+    expect(result!.arkit52.mouthSmileLeft).toBeCloseTo(0.8, 2);
+    expect(result!.arkit52.mouthSmileRight).toBeCloseTo(0.6, 2);
+    expect(result!.arkit52.jawOpen).toBeCloseTo(0.5, 2);
   });
 
-  it('weights は 0..1 にクランプされる', async () => {
+  it('arkit52 は生スコアをそのまま返す (クランプしない)', async () => {
     mockDetectForVideo.mockReturnValue({
       faceBlendshapes: [
         {
@@ -144,7 +145,7 @@ describe('FaceLandmarkerHandle.detect', () => {
     });
     const handle = await createFaceLandmarker('/mediapipe');
     const result = handle.detect(fakeVideo(), 100);
-    expect(result!.weights.happy).toBeLessThanOrEqual(1);
+    expect(result!.arkit52.mouthSmileLeft).toBeCloseTo(1.5, 2);
   });
 
   it('video.readyState < 2 の場合は null を返す', async () => {

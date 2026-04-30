@@ -2,14 +2,21 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createRef } from 'react';
 
-const { mockDetect, mockClose, mockCreateFaceLandmarker } = vi.hoisted(() => ({
+const { mockDetect, mockClose, mockCreateFaceLandmarker, mockMapBlendShapes } = vi.hoisted(() => ({
   mockDetect: vi.fn(),
   mockClose: vi.fn(),
   mockCreateFaceLandmarker: vi.fn(),
+  mockMapBlendShapes: vi.fn(),
 }));
 
 vi.mock('@/infrastructure/mediapipe/face-landmarker', () => ({
   createFaceLandmarker: mockCreateFaceLandmarker,
+}));
+
+vi.mock('@/infrastructure/avatar/retarget', () => ({
+  BlendShapeMapper: vi.fn(function () {
+    return { mapBlendShapes: mockMapBlendShapes, reset: vi.fn() };
+  }),
 }));
 
 const mockRafId = 42;
@@ -49,6 +56,7 @@ function makeVideoRef(readyState = 4) {
 describe('useFaceLandmarker', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockMapBlendShapes.mockReturnValue({ ...zeroWeights });
     // Default: rAF runs the callback once per scheduling round and returns a stable ID.
     // The re-entrancy guard prevents infinite recursion when tick() calls rAF again.
     let rafBusy = false;
@@ -79,17 +87,21 @@ describe('useFaceLandmarker', () => {
     await waitFor(() => expect(result.current.isReady).toBe(true));
   });
 
-  it('detect が weights を返すと blendShapes が更新される', async () => {
-    mockDetect.mockReturnValue({ weights: { ...zeroWeights, happy: 0.8 }, lookAt: null });
+  it('detect が arkit52 を返すと BlendShapeMapper 経由で blendShapes が更新される', async () => {
+    const fakeArkit52 = { mouthSmileLeft: 0.8, mouthSmileRight: 0.8 };
+    const mapped = { ...zeroWeights, happy: 0.8 };
+    mockDetect.mockReturnValue({ arkit52: fakeArkit52, lookAt: null });
+    mockMapBlendShapes.mockReturnValue(mapped);
     const videoRef = makeVideoRef();
     const { result } = renderHook(() => useFaceLandmarker(videoRef));
     await waitFor(() => expect(result.current.blendShapes?.happy).toBeCloseTo(0.8));
   });
 
   it('detect が null を返しても blendShapes は以前の値を維持する', async () => {
-    mockDetect
-      .mockReturnValueOnce({ weights: { ...zeroWeights, happy: 0.5 }, lookAt: null })
-      .mockReturnValue(null);
+    const fakeArkit52 = { mouthSmileLeft: 0.5, mouthSmileRight: 0.5 };
+    const mapped = { ...zeroWeights, happy: 0.5 };
+    mockDetect.mockReturnValueOnce({ arkit52: fakeArkit52, lookAt: null }).mockReturnValue(null);
+    mockMapBlendShapes.mockReturnValue(mapped);
     const videoRef = makeVideoRef();
     const { result } = renderHook(() => useFaceLandmarker(videoRef));
     await waitFor(() => expect(result.current.blendShapes?.happy).toBeCloseTo(0.5));
@@ -117,5 +129,16 @@ describe('useFaceLandmarker', () => {
     const { result } = renderHook(() => useFaceLandmarker(videoRef));
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.isReady).toBe(false);
+  });
+
+  it('BlendShapeMapper.mapBlendShapes が arkit52 で呼ばれ smooth 済みの値を返す', async () => {
+    const fakeArkit52 = { mouthSmileLeft: 0.8, mouthSmileRight: 0.8 };
+    const smoothed = { ...zeroWeights, happy: 0.4 }; // lerp(0, 0.8, 0.5)
+    mockDetect.mockReturnValue({ arkit52: fakeArkit52, lookAt: null });
+    mockMapBlendShapes.mockReturnValue(smoothed);
+    const videoRef = makeVideoRef();
+    const { result } = renderHook(() => useFaceLandmarker(videoRef));
+    await waitFor(() => expect(result.current.blendShapes).toEqual(smoothed));
+    expect(mockMapBlendShapes).toHaveBeenCalledWith(fakeArkit52);
   });
 });

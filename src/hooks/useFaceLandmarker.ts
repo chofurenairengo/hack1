@@ -5,6 +5,7 @@ import {
   createFaceLandmarker,
   type FaceLandmarkerHandle,
 } from '@/infrastructure/mediapipe/face-landmarker';
+import { BlendShapeMapper } from '@/infrastructure/avatar/retarget';
 import type { ExpressionPayload } from '@/domain/avatar/value-objects/expression.payload';
 
 type BlendShapeWeights = ExpressionPayload['weights'];
@@ -49,13 +50,14 @@ export function useFaceLandmarker(
       });
 
     function startLoop(handle: FaceLandmarkerHandle) {
+      const mapper = new BlendShapeMapper();
       function tick() {
         if (!active) return;
         const video = videoRef.current;
         if (video) {
           const result = handle.detect(video, performance.now());
           if (result && mountedRef.current) {
-            setBlendShapes(result.weights);
+            setBlendShapes(mapper.mapBlendShapes(result.arkit52));
           }
         }
         rafIdRef.current = requestAnimationFrame(tick);
