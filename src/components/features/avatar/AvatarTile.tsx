@@ -1,16 +1,22 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import type { VRM } from '@pixiv/three-vrm';
 import { useVRM } from '@/hooks/useVRM';
 import type { ExpressionPayload } from '@/domain/avatar/value-objects/expression.payload';
 
 interface AvatarTileProps {
   vrmUrl: string;
   weights: ExpressionPayload['weights'];
+  onLoad?: (vrm: VRM) => void;
 }
 
-export function AvatarTile({ vrmUrl, weights }: AvatarTileProps) {
+export function AvatarTile({ vrmUrl, weights, onLoad }: AvatarTileProps) {
   const { vrm } = useVRM(vrmUrl);
   const prevWeightsRef = useRef<ExpressionPayload['weights'] | null>(null);
+
+  useEffect(() => {
+    if (vrm) onLoad?.(vrm);
+  }, [vrm, onLoad]);
 
   useFrame((state, delta) => {
     if (!vrm) return;
