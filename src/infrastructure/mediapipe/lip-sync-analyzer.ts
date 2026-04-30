@@ -7,6 +7,7 @@ export type LipSyncAnalyzerHandle = Readonly<{
 
 export function createLipSyncAnalyzer(stream: MediaStream): LipSyncAnalyzerHandle {
   const ctx = new AudioContext();
+  void ctx.resume();
   const source = ctx.createMediaStreamSource(stream);
   const analyser = ctx.createAnalyser();
   analyser.fftSize = FFT_SIZE;

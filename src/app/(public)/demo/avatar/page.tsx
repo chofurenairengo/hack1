@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLipSync } from '@/hooks/useLipSync';
 import Image from 'next/image';
 import { Box3 } from 'three';
@@ -55,6 +55,8 @@ export default function AvatarDemoPage() {
     audioStreamRef.current = null;
     setAudioStream(null);
   }, []);
+
+  useEffect(() => () => stopMic(), [stopMic]);
 
   const handleAvatarLoad = useCallback((vrm: VRM) => {
     const bbox = new Box3().setFromObject(vrm.scene);

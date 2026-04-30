@@ -12,8 +12,14 @@ import type { ExpressionPayload } from '@/domain/avatar/value-objects/expression
 
 const EMIT_INTERVAL_MS = 33;
 const REDUCED_MOTION_THRESHOLD = 0.3;
-const AA_AUDIO_WEIGHT = 0.3;
+const AA_AUDIO_WEIGHT = 5.0;
 const AA_FACE_WEIGHT = 0.7;
+
+function blendAa(faceAa: number, rms: number, prefersReducedMotion: boolean): number {
+  if (prefersReducedMotion) return 0;
+  const raw = AA_FACE_WEIGHT * faceAa + AA_AUDIO_WEIGHT * rms;
+  return Math.round(Math.max(0, Math.min(1, raw)) * 100) / 100;
+}
 
 const DEFAULT_WEIGHTS: ExpressionPayload['weights'] = {
   happy: 0,
@@ -33,13 +39,19 @@ interface AvatarSceneProps {
   pairId: PairId;
   selfUserId: UserId;
   selfPresetKey: AvatarPresetKey;
+  audioStream?: MediaStream | null;
 }
 
-export function AvatarScene({ eventId, pairId, selfUserId, selfPresetKey }: AvatarSceneProps) {
+export function AvatarScene({
+  eventId,
+  pairId,
+  selfUserId,
+  selfPresetKey,
+  audioStream = null,
+}: AvatarSceneProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const lastEmitRef = useRef<number>(0);
   const streamRef = useRef<MediaStream | null>(null);
-  const audioStreamRef = useRef<MediaStream | null>(null);
 
   const [prefersReducedMotion] = useState(
     () =>
@@ -47,7 +59,6 @@ export function AvatarScene({ eventId, pairId, selfUserId, selfPresetKey }: Avat
       window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
 
   const { blendShapes } = useFaceLandmarker(videoRef);
   const { emit } = useAvatarSync(eventId, pairId);
@@ -58,12 +69,9 @@ export function AvatarScene({ eventId, pairId, selfUserId, selfPresetKey }: Avat
   const tryEmit = useCallback(() => {
     if (!blendShapes) return;
 
-    const blendedAa = prefersReducedMotion
-      ? 0
-      : Math.max(0, Math.min(1, AA_FACE_WEIGHT * blendShapes.aa + AA_AUDIO_WEIGHT * rms));
     const weights: ExpressionPayload['weights'] = {
       ...blendShapes,
-      aa: Math.round(blendedAa * 100) / 100,
+      aa: blendAa(blendShapes.aa, rms, prefersReducedMotion),
     };
 
     const maxWeight = Math.max(...Object.values(weights));
@@ -113,31 +121,6 @@ export function AvatarScene({ eventId, pairId, selfUserId, selfPresetKey }: Avat
     };
   }, []);
 
-  useEffect(() => {
-    let active = true;
-
-    navigator.mediaDevices
-      ?.getUserMedia({ video: false, audio: true })
-      .then((stream) => {
-        if (!active) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        audioStreamRef.current = stream;
-        setAudioStream(stream);
-      })
-      .catch(() => {
-        // マイク拒否は無視 — 口パクなしで続行
-      });
-
-    return () => {
-      active = false;
-      audioStreamRef.current?.getTracks().forEach((t) => t.stop());
-      audioStreamRef.current = null;
-      setAudioStream(null);
-    };
-  }, []);
-
   if (!preset) {
     return <div role="alert">アバターを読み込めませんでした</div>;
   }
@@ -146,11 +129,8 @@ export function AvatarScene({ eventId, pairId, selfUserId, selfPresetKey }: Avat
     return <div role="alert">{cameraError}</div>;
   }
 
-  const selfBlendedAa = prefersReducedMotion
-    ? 0
-    : Math.max(0, Math.min(1, AA_FACE_WEIGHT * (blendShapes?.aa ?? 0) + AA_AUDIO_WEIGHT * rms));
   const selfWeights: ExpressionPayload['weights'] = blendShapes
-    ? { ...blendShapes, aa: Math.round(selfBlendedAa * 100) / 100 }
+    ? { ...blendShapes, aa: blendAa(blendShapes.aa, rms, prefersReducedMotion) }
     : DEFAULT_WEIGHTS;
 
   return (

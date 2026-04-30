@@ -6,6 +6,9 @@ import {
   type LipSyncAnalyzerHandle,
 } from '@/infrastructure/mediapipe/lip-sync-analyzer';
 
+const RMS_UPDATE_INTERVAL_MS = 50;
+const RMS_UPDATE_THRESHOLD = 0.01;
+
 export type UseLipSyncResult = Readonly<{ rms: number }>;
 
 export function useLipSync(audioStream: MediaStream | null): UseLipSyncResult {
@@ -19,10 +22,21 @@ export function useLipSync(audioStream: MediaStream | null): UseLipSyncResult {
     const analyzer = createLipSyncAnalyzer(audioStream);
     analyzerRef.current = analyzer;
     let active = true;
+    let lastPublishedAt = 0;
+    let lastPublishedRms = 0;
 
     function tick() {
       if (!active) return;
-      setRms(analyzer.getRms());
+      const nextRms = analyzer.getRms();
+      const now = performance.now();
+      if (
+        now - lastPublishedAt >= RMS_UPDATE_INTERVAL_MS &&
+        Math.abs(nextRms - lastPublishedRms) >= RMS_UPDATE_THRESHOLD
+      ) {
+        lastPublishedAt = now;
+        lastPublishedRms = nextRms;
+        setRms(nextRms);
+      }
       rafIdRef.current = requestAnimationFrame(tick);
     }
     rafIdRef.current = requestAnimationFrame(tick);
@@ -35,6 +49,7 @@ export function useLipSync(audioStream: MediaStream | null): UseLipSyncResult {
       }
       analyzer.close();
       analyzerRef.current = null;
+      setRms(0);
     };
   }, [audioStream]);
 
