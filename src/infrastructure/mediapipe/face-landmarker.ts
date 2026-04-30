@@ -1,13 +1,11 @@
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
-import type { ExpressionPayload } from '@/domain/avatar/value-objects/expression.payload';
+import type { BlendShapeMap } from '@/infrastructure/avatar/retarget';
 
 /** Maximum input side length passed to MediaPipe (FPS優先) */
 const INFER_SIZE = 192;
 
-type BlendShapeWeights = ExpressionPayload['weights'];
-
 export type FaceDetectResult = Readonly<{
-  weights: BlendShapeWeights;
+  arkit52: BlendShapeMap;
   lookAt: { x: number; y: number } | null;
 }>;
 
@@ -17,40 +15,15 @@ export type FaceLandmarkerHandle = Readonly<{
 }>;
 
 // ---------------------------------------------------------------------------
-// Blendshape mapping helpers
+// ARKit52 score map helper
 // ---------------------------------------------------------------------------
 
-function avg(a: number, b: number): number {
-  return (a + b) / 2;
-}
-
-function clamp01(v: number): number {
-  return Math.max(0, Math.min(1, v));
-}
-
-function buildScoreMap(categories: ReadonlyArray<{ categoryName: string; score: number }>) {
+function buildScoreMap(
+  categories: ReadonlyArray<{ categoryName: string; score: number }>,
+): BlendShapeMap {
   const map: Record<string, number> = {};
   for (const c of categories) map[c.categoryName] = c.score;
   return map;
-}
-
-function mapWeights(
-  categories: ReadonlyArray<{ categoryName: string; score: number }>,
-): BlendShapeWeights {
-  const s = buildScoreMap(categories);
-  const g = (k: string) => s[k] ?? 0;
-  return {
-    happy: clamp01(avg(g('mouthSmileLeft'), g('mouthSmileRight'))),
-    sad: clamp01(avg(g('mouthFrownLeft'), g('mouthFrownRight'))),
-    angry: clamp01(avg(g('browDownLeft'), g('browDownRight'))),
-    surprised: clamp01(avg(avg(g('eyeWideLeft'), g('eyeWideRight')), g('browInnerUp'))),
-    relaxed: clamp01(avg(g('cheekSquintLeft'), g('cheekSquintRight'))),
-    aa: clamp01(g('jawOpen')),
-    ih: clamp01(avg(g('mouthUpperUpLeft'), g('mouthUpperUpRight'))),
-    ou: clamp01(avg(g('mouthPucker'), g('mouthFunnel'))),
-    ee: clamp01(avg(g('mouthStretchLeft'), g('mouthStretchRight'))),
-    oh: clamp01(avg(g('mouthLowerDownLeft'), g('mouthLowerDownRight'))),
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -102,8 +75,7 @@ export async function createFaceLandmarker(
     if (ctx) ctx.drawImage(video, 0, 0, INFER_SIZE, INFER_SIZE);
     const raw = landmarker.detectForVideo(ctx ? canvas : video, nowMs);
     if (!raw.faceBlendshapes?.[0]) return null;
-    const weights = mapWeights(raw.faceBlendshapes[0].categories);
-    return { weights, lookAt: null };
+    return { arkit52: buildScoreMap(raw.faceBlendshapes[0].categories), lookAt: null };
   }
 
   function close(): void {

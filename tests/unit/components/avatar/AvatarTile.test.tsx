@@ -64,6 +64,14 @@ describe('AvatarTile', () => {
     expect(container.firstChild).toBeNull();
   });
 
+  it('calls onError with error message when vrm load fails', () => {
+    mockUseVRM.mockReturnValue({ vrm: null, error: 'failed', loading: false });
+    const onError = vi.fn();
+    render(<AvatarTile vrmUrl="/vrm/test.vrm" weights={baseWeights} onError={onError} />);
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith('failed');
+  });
+
   it('calls expressionManager.setValue for each weight key', () => {
     const setValue = vi.fn();
     const vrm = makeVrm({ setValue });

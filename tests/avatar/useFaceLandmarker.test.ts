@@ -7,11 +7,18 @@ const mocks = vi.hoisted(() => {
   const close = vi.fn();
   const handle = { detect, close };
   const createFaceLandmarker = vi.fn().mockResolvedValue(handle);
-  return { detect, close, handle, createFaceLandmarker };
+  const mockMapBlendShapes = vi.fn();
+  return { detect, close, handle, createFaceLandmarker, mockMapBlendShapes };
 });
 
 vi.mock('@/infrastructure/mediapipe/face-landmarker', () => ({
   createFaceLandmarker: mocks.createFaceLandmarker,
+}));
+
+vi.mock('@/infrastructure/avatar/retarget', () => ({
+  BlendShapeMapper: vi.fn(function () {
+    return { mapBlendShapes: mocks.mockMapBlendShapes, reset: vi.fn() };
+  }),
 }));
 
 const zeroWeights = {
@@ -52,6 +59,7 @@ describe('useFaceLandmarker', () => {
     vi.stubGlobal('cancelAnimationFrame', cafMock);
     mocks.createFaceLandmarker.mockResolvedValue(mocks.handle);
     mocks.detect.mockReturnValue(null);
+    mocks.mockMapBlendShapes.mockReturnValue({ ...zeroWeights });
   });
 
   afterEach(() => {
@@ -102,7 +110,9 @@ describe('useFaceLandmarker', () => {
 
   it('video がセットされているとき detect を呼び blendShapes を更新する', async () => {
     const weights = { ...zeroWeights, happy: 0.8, aa: 0.5 };
-    mocks.detect.mockReturnValue({ weights, lookAt: null });
+    const fakeArkit52 = { mouthSmileLeft: 0.8, jawOpen: 0.5 };
+    mocks.detect.mockReturnValue({ arkit52: fakeArkit52, lookAt: null });
+    mocks.mockMapBlendShapes.mockReturnValue(weights);
 
     const video = document.createElement('video') as HTMLVideoElement;
     const videoRef = { current: video };
