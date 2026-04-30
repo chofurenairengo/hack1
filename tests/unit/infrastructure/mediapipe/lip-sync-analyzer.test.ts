@@ -21,6 +21,7 @@ const mockCtx = {
   createAnalyser: vi.fn().mockReturnValue(mockAnalyser),
   createMediaStreamSource: vi.fn().mockReturnValue(mockSource),
   close: mockClose,
+  resume: vi.fn().mockResolvedValue(undefined),
 };
 
 vi.stubGlobal(
