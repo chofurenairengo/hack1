@@ -98,7 +98,11 @@ export default function AvatarDemoPage() {
           />
         </group>
       </AvatarCanvas>
-      {loadError && <p className="mt-2 text-sm text-red-400">VRM ロード失敗: {loadError}</p>}
+      {loadError && (
+        <p role="alert" aria-atomic="true" className="mt-2 text-sm text-red-400">
+          VRM ロード失敗: {loadError}
+        </p>
+      )}
 
       <div className="max-w-md space-y-4">
         <h2 className="text-lg font-semibold">表情</h2>
