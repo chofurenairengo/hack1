@@ -46,6 +46,9 @@ class SupabaseChannelFactory {
   /**
    * 参照カウントをデクリメントする。
    * 0 になったときだけ実際に `supabase.removeChannel()` を呼んでキャッシュから削除する。
+   *
+   * `removeChannel()` の await 完了後に Map をクリアする。失敗時は Map にエントリが
+   * 残るため、リーク追跡不能 (再試行/再 remove 不可) になることを防ぐ。
    */
   async remove(name: string): Promise<void> {
     const channel = this.channels.get(name);
@@ -57,17 +60,20 @@ class SupabaseChannelFactory {
       return;
     }
 
+    await this.client.removeChannel(channel);
     this.refCounts.delete(name);
     this.channels.delete(name);
-    await this.client.removeChannel(channel);
   }
 
-  /** 全チャンネルを参照カウントを無視して一括解除する (ページ離脱時に呼ぶ) */
+  /**
+   * 全チャンネルを参照カウントを無視して一括解除する (ページ離脱時に呼ぶ)。
+   * `removeChannel()` の await 完了後に Map をクリアする (失敗時のリーク追跡不能を防ぐ)。
+   */
   async removeAll(): Promise<void> {
     const entries = [...this.channels.values()];
+    await Promise.all(entries.map((channel) => this.client.removeChannel(channel)));
     this.channels.clear();
     this.refCounts.clear();
-    await Promise.all(entries.map((channel) => this.client.removeChannel(channel)));
   }
 
   has(name: string): boolean {

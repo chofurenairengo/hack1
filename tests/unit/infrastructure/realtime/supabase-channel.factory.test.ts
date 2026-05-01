@@ -189,4 +189,41 @@ describe('SupabaseChannelFactory', () => {
       expect(factory.refCount('nope')).toBe(0);
     });
   });
+
+  describe('removeChannel rejection handling', () => {
+    it('keeps the channel in the cache when removeChannel() rejects', async () => {
+      const fakeChannel = { id: 'ch' };
+      mockChannel.mockReturnValue(fakeChannel);
+      mockRemoveChannel.mockRejectedValueOnce(new Error('network'));
+
+      const factory = await importFactory();
+      factory.get('ch:flaky');
+
+      await expect(factory.remove('ch:flaky')).rejects.toThrow('network');
+
+      // 失敗時も Map に残っているので再試行可能
+      expect(factory.has('ch:flaky')).toBe(true);
+      expect(factory.refCount('ch:flaky')).toBe(1);
+
+      // 復旧: 再度 remove() で成功させる
+      mockRemoveChannel.mockResolvedValueOnce(undefined);
+      await factory.remove('ch:flaky');
+      expect(factory.has('ch:flaky')).toBe(false);
+      expect(factory.refCount('ch:flaky')).toBe(0);
+    });
+
+    it('removeAll() leaves the cache populated when removeChannel() rejects', async () => {
+      const fakeChannel = { id: 'ch' };
+      mockChannel.mockReturnValue(fakeChannel);
+      mockRemoveChannel.mockRejectedValueOnce(new Error('network'));
+
+      const factory = await importFactory();
+      factory.get('ch:a');
+
+      await expect(factory.removeAll()).rejects.toThrow('network');
+
+      expect(factory.has('ch:a')).toBe(true);
+      expect(factory.refCount('ch:a')).toBe(1);
+    });
+  });
 });
