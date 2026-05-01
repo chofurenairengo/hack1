@@ -37,8 +37,8 @@ vi.mock('@react-three/fiber', () => ({
 
 const mockExpressions: Record<string, ExpressionPayload> = {};
 
-vi.mock('@/hooks/useAvatarSync', () => ({
-  useAvatarSync: () => ({
+vi.mock('@/hooks/useTableAvatarSync', () => ({
+  useTableAvatarSync: () => ({
     emit: vi.fn(),
     expressions: mockExpressions,
   }),

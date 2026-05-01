@@ -2,12 +2,12 @@
 
 import { useMemo, useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import type { EventId, PairId, TableId } from '@/shared/types/ids';
+import type { EventId, TableId } from '@/shared/types/ids';
 import type { TableMemberData } from '@/types/api';
 import type { AvatarPreset } from '@/domain/avatar/entities/avatar-preset.entity';
 import type { ExpressionPayload } from '@/domain/avatar/value-objects/expression.payload';
 import { AVATAR_PRESETS, type AvatarPresetKey } from '@/infrastructure/vrm/preset-registry';
-import { useAvatarSync } from '@/hooks/useAvatarSync';
+import { useTableAvatarSync } from '@/hooks/useTableAvatarSync';
 import { AvatarCanvas } from './AvatarCanvas';
 import { AvatarTile } from './AvatarTile';
 
@@ -41,7 +41,7 @@ export function computeCircularLayout(count: number, radius: number): ReadonlyAr
     return {
       x: radius * Math.sin(theta),
       z: radius * Math.cos(theta),
-      rotY: theta,
+      rotY: theta + Math.PI,
     };
   });
 }
@@ -175,7 +175,7 @@ export function RoundtableScene({
   selfIndex = 0,
   className,
 }: RoundtableSceneProps) {
-  const { expressions } = useAvatarSync(eventId, tableId as unknown as PairId);
+  const { expressions } = useTableAvatarSync(eventId, tableId);
   const memberCount = members.length;
 
   const fpsCam = useMemo(
