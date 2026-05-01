@@ -20,6 +20,7 @@ const WASM_BASE_PATH = '/mediapipe';
 
 export function useFaceLandmarker(
   videoRef: RefObject<HTMLVideoElement | null>,
+  targetFps = 30,
 ): UseFaceLandmarkerResult {
   const [blendShapes, setBlendShapes] = useState<BlendShapeWeights | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -28,6 +29,12 @@ export function useFaceLandmarker(
   const handleRef = useRef<FaceLandmarkerHandle | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const mountedRef = useRef(true);
+  const targetFpsRef = useRef(targetFps);
+  const lastDetectRef = useRef(0);
+
+  useEffect(() => {
+    targetFpsRef.current = targetFps;
+  }, [targetFps]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -53,9 +60,12 @@ export function useFaceLandmarker(
       const mapper = new BlendShapeMapper();
       function tick() {
         if (!active) return;
+        const now = performance.now();
+        const intervalMs = 1000 / targetFpsRef.current;
         const video = videoRef.current;
-        if (video) {
-          const result = handle.detect(video, performance.now());
+        if (video && now - lastDetectRef.current >= intervalMs) {
+          lastDetectRef.current = now;
+          const result = handle.detect(video, now);
           if (result && mountedRef.current) {
             setBlendShapes(mapper.mapBlendShapes(result.arkit52));
           }
