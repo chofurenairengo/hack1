@@ -17,6 +17,10 @@ export const channelName = {
   /** 表情係数同期チャンネル (登壇ペア単位、15fps) */
   expression: (eventId: EventId, pairId: PairId): string => `event:${eventId}:expression:${pairId}`,
 
+  /** 表情係数同期チャンネル (交流テーブル単位、15fps) */
+  tableExpression: (eventId: EventId, tableId: TableId): string =>
+    `event:${eventId}:table-expression:${tableId}`,
+
   /** WebRTC シグナリングチャンネル (交流テーブル単位) */
   breakoutSignal: (eventId: EventId, tableId: TableId): string =>
     `breakout:${eventId}:${tableId}:signal`,
