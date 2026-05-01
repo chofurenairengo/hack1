@@ -28,7 +28,7 @@ export type UpdateSlideDeckInput = Readonly<{
 export interface SlideDeckRepository {
   findById(id: DeckId): Promise<Result<SlideDeckRecord, NotFoundError>>;
   findByPair(pairId: PairId): Promise<Result<SlideDeckRecord, NotFoundError>>;
-  findByEvent(eventId: EventId): Promise<Result<readonly SlideDeckRecord[], never>>;
-  create(input: CreateSlideDeckInput): Promise<Result<SlideDeckRecord, never>>;
+  findByEvent(eventId: EventId): Promise<Result<readonly SlideDeckRecord[], NotFoundError>>;
+  create(input: CreateSlideDeckInput): Promise<Result<SlideDeckRecord, NotFoundError>>;
   update(id: DeckId, input: UpdateSlideDeckInput): Promise<Result<SlideDeckRecord, NotFoundError>>;
 }
