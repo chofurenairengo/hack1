@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { TableMemberData } from '@/types/api';
-import type { EventId, TableId } from '@/shared/types/ids';
+import type { EventId, TableId, UserId } from '@/shared/types/ids';
 import type { ExpressionPayload } from '@/domain/avatar/value-objects/expression.payload';
 
 vi.mock('../AvatarCanvas', () => ({
@@ -21,8 +21,8 @@ vi.mock('../AvatarCanvas', () => ({
 }));
 
 vi.mock('../AvatarTile', () => ({
-  AvatarTile: ({ vrmUrl }: { vrmUrl: string }) => (
-    <div data-testid="avatar-tile" data-vrm-url={vrmUrl} />
+  AvatarTile: ({ vrmUrl, weights }: { vrmUrl: string; weights: ExpressionPayload['weights'] }) => (
+    <div data-testid="avatar-tile" data-vrm-url={vrmUrl} data-weights={JSON.stringify(weights)} />
   ),
 }));
 
@@ -78,6 +78,9 @@ function makeMembers(count: number): ReadonlyArray<TableMemberData> {
 describe('RoundtableScene', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    for (const key of Object.keys(mockExpressions)) {
+      delete mockExpressions[key];
+    }
   });
 
   describe('valid member counts', () => {
@@ -147,10 +150,36 @@ describe('RoundtableScene', () => {
   });
 
   describe('expression weights', () => {
-    it('passes zero weights when expressions is empty', () => {
+    it('passes ZERO_WEIGHTS to every tile when expressions is empty', () => {
       render(<RoundtableScene eventId={EVENT_ID} tableId={TABLE_ID} members={makeMembers(4)} />);
       const tiles = screen.getAllByTestId('avatar-tile');
       expect(tiles).toHaveLength(3);
+      for (const tile of tiles) {
+        const raw = tile.getAttribute('data-weights');
+        expect(raw).not.toBeNull();
+        expect(JSON.parse(raw!)).toEqual(ZERO_WEIGHTS);
+      }
+    });
+
+    it('passes the actual weights when expressions has an entry for the user', () => {
+      const populated: ExpressionPayload['weights'] = { ...ZERO_WEIGHTS, happy: 0.8 };
+      const members = makeMembers(4);
+      for (const member of members) {
+        mockExpressions[member.userId as unknown as string] = {
+          userId: member.userId as unknown as UserId,
+          weights: populated,
+          lookAt: null,
+          ts: 1234,
+        };
+      }
+      render(<RoundtableScene eventId={EVENT_ID} tableId={TABLE_ID} members={members} />);
+      const tiles = screen.getAllByTestId('avatar-tile');
+      expect(tiles).toHaveLength(3);
+      for (const tile of tiles) {
+        const raw = tile.getAttribute('data-weights');
+        expect(raw).not.toBeNull();
+        expect(JSON.parse(raw!)).toEqual(populated);
+      }
     });
   });
 
