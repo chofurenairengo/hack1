@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
     ];
     return [
       {
-        source: '/((?!events).*)',
+        source: '/((?!events|demo|test-webrtc).*)',
         headers: [
           ...commonSecurityHeaders,
           { key: 'Permissions-Policy', value: 'camera=(), microphone=()' },
