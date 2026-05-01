@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import type { EventId, PairId, UserId } from '@/shared/types/ids';
 import { useAvatarSync } from '@/hooks/useAvatarSync';
+import { useAvatarPerf } from '@/hooks/useAvatarPerf';
 import { useFaceLandmarker } from '@/hooks/useFaceLandmarker';
 import { useLipSync } from '@/hooks/useLipSync';
 import { getPresetByKey, type AvatarPresetKey } from '@/infrastructure/vrm/preset-registry';
@@ -60,7 +61,8 @@ export function AvatarScene({
   );
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  const { blendShapes } = useFaceLandmarker(videoRef);
+  const { mediapipeTargetFps, disableEffects } = useAvatarPerf();
+  const { blendShapes } = useFaceLandmarker(videoRef, mediapipeTargetFps);
   const { emit } = useAvatarSync(eventId, pairId);
   const { rms } = useLipSync(audioStream);
 
@@ -136,7 +138,7 @@ export function AvatarScene({
   return (
     <>
       <video ref={videoRef} autoPlay playsInline muted style={{ display: 'none' }} />
-      <AvatarCanvas>
+      <AvatarCanvas disableEffects={disableEffects}>
         <AvatarTile vrmUrl={preset.vrmUrl} weights={selfWeights} />
       </AvatarCanvas>
     </>

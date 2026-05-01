@@ -141,4 +141,49 @@ describe('useFaceLandmarker', () => {
     await waitFor(() => expect(result.current.blendShapes).toEqual(smoothed));
     expect(mockMapBlendShapes).toHaveBeenCalledWith(fakeArkit52);
   });
+
+  describe('targetFps スロットリング', () => {
+    it('targetFps=10 のとき interval 100ms 未満では detect を呼ばない', async () => {
+      // performance.now を制御して interval < 100ms をシミュレート
+      let now = 0;
+      vi.stubGlobal('performance', { now: () => now });
+
+      const fakeArkit52 = { mouthSmileLeft: 0.5 };
+      mockDetect.mockReturnValue({ arkit52: fakeArkit52, lookAt: null });
+      mockMapBlendShapes.mockReturnValue({ ...zeroWeights });
+
+      const videoRef = makeVideoRef();
+      renderHook(() => useFaceLandmarker(videoRef, 10));
+      await waitFor(() => expect(mockCreateFaceLandmarker).toHaveBeenCalledOnce());
+
+      const callsBefore = mockDetect.mock.calls.length;
+
+      // interval = 50ms (< 1000/10=100ms) → detect はスキップされる
+      now = 50;
+      // RAF が同期的に 1 度呼ばれる (beforeEach の rafBusy ガードにより)
+      await waitFor(() => {});
+      expect(mockDetect.mock.calls.length).toBe(callsBefore);
+
+      vi.unstubAllGlobals();
+    });
+
+    it('targetFps=10 のとき interval 100ms 以上で detect が呼ばれる', async () => {
+      let now = 0;
+      vi.stubGlobal('performance', { now: () => now });
+
+      const fakeArkit52 = { mouthSmileLeft: 0.5 };
+      mockDetect.mockReturnValue({ arkit52: fakeArkit52, lookAt: null });
+      mockMapBlendShapes.mockReturnValue({ ...zeroWeights });
+
+      const videoRef = makeVideoRef();
+      renderHook(() => useFaceLandmarker(videoRef, 10));
+      await waitFor(() => expect(mockCreateFaceLandmarker).toHaveBeenCalledOnce());
+
+      // interval = 100ms (== 1000/10) → detect が呼ばれる
+      now = 100;
+      await waitFor(() => expect(mockDetect).toHaveBeenCalled());
+
+      vi.unstubAllGlobals();
+    });
+  });
 });

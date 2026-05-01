@@ -13,9 +13,16 @@ interface AvatarCanvasProps {
   className?: string;
   camera?: CameraConfig;
   transparent?: boolean;
+  disableEffects?: boolean;
 }
 
-export function AvatarCanvas({ children, className, camera, transparent }: AvatarCanvasProps) {
+export function AvatarCanvas({
+  children,
+  className,
+  camera,
+  transparent,
+  disableEffects = false,
+}: AvatarCanvasProps) {
   const cameraConfig = {
     position: camera?.position ?? ([0, 1.2, 2.5] as [number, number, number]),
     fov: camera?.fov ?? 50,
@@ -25,7 +32,7 @@ export function AvatarCanvas({ children, className, camera, transparent }: Avata
       <Canvas
         frameloop="demand"
         camera={cameraConfig}
-        dpr={[1, 2]}
+        dpr={disableEffects ? [1, 1] : [1, 2]}
         gl={transparent ? { alpha: true } : undefined}
         onCreated={transparent ? ({ gl }) => gl.setClearColor(0x000000, 0) : undefined}
       >
