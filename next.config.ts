@@ -30,6 +30,14 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // Demo pages (lip-sync, avatar, etc.) need microphone for audio input.
+        source: '/demo/:path*',
+        headers: [
+          ...commonSecurityHeaders,
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(self)' },
+        ],
+      },
+      {
         // Local WebRTC smoke-test page needs microphone access.
         source: '/test-webrtc',
         headers: [

@@ -36,6 +36,7 @@ export default function AvatarDemoPage() {
   const [headY, setHeadY] = useState(DEFAULT_HEAD_Y);
   const [unavailableExprs, setUnavailableExprs] = useState<ReadonlySet<ExpressionKey>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [micError, setMicError] = useState<string | null>(null);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const { rms } = useLipSync(audioStream);
@@ -45,8 +46,16 @@ export default function AvatarDemoPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       audioStreamRef.current = stream;
       setAudioStream(stream);
-    } catch {
-      // マイク拒否またはデバイスなし — 無音のまま続行
+      setMicError(null);
+    } catch (err: unknown) {
+      const isPermissionDenied =
+        err instanceof DOMException &&
+        (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError');
+      setMicError(
+        isPermissionDenied
+          ? 'マイクの使用が拒否されています。ブラウザのアドレスバー左の鍵アイコンからマイクを「許可」してリロードしてください。'
+          : 'マイクにアクセスできませんでした。デバイスが接続されているか確認してください。',
+      );
     }
   }, []);
 
@@ -180,6 +189,11 @@ export default function AvatarDemoPage() {
             </button>
           )}
         </div>
+        {micError && (
+          <p role="alert" aria-atomic="true" className="mt-1 text-sm text-red-400">
+            {micError}
+          </p>
+        )}
         {audioStream && (
           <div className="space-y-1 text-sm text-gray-300">
             <div className="flex items-center gap-2">
