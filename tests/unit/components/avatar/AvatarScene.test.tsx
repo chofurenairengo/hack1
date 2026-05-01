@@ -8,11 +8,13 @@ const mockUseFaceLandmarker = vi.hoisted(() => vi.fn());
 const mockUseAvatarSync = vi.hoisted(() => vi.fn());
 const mockUseLipSync = vi.hoisted(() => vi.fn());
 const mockGetPresetByKey = vi.hoisted(() => vi.fn());
+const mockUseCameraPermission = vi.hoisted(() => vi.fn());
 
 vi.mock('@/hooks/useFaceLandmarker', () => ({ useFaceLandmarker: mockUseFaceLandmarker }));
 vi.mock('@/hooks/useAvatarSync', () => ({ useAvatarSync: mockUseAvatarSync }));
 vi.mock('@/hooks/useLipSync', () => ({ useLipSync: mockUseLipSync }));
 vi.mock('@/infrastructure/vrm/preset-registry', () => ({ getPresetByKey: mockGetPresetByKey }));
+vi.mock('@/hooks/useCameraPermission', () => ({ useCameraPermission: mockUseCameraPermission }));
 vi.mock('@/components/features/avatar/AvatarCanvas', () => ({
   AvatarCanvas: ({ children }: { children?: React.ReactNode }) => (
     <div data-testid="avatar-canvas">{children}</div>
@@ -100,6 +102,11 @@ describe('AvatarScene', () => {
         query: vi.fn().mockResolvedValue({ state: 'granted' }),
       },
     });
+
+    mockUseCameraPermission.mockReturnValue({
+      permissionState: 'granted',
+      requestPermission: vi.fn(),
+    });
   });
 
   afterEach(() => {
@@ -179,7 +186,7 @@ describe('AvatarScene', () => {
     expect(mockEmit).not.toHaveBeenCalled();
   });
 
-  it('does emit when prefers-reduced-motion is true but max weight >= 0.3', async () => {
+  it('does not emit when prefers-reduced-motion is true regardless of weights', async () => {
     window.matchMedia = vi.fn().mockReturnValue({
       matches: true,
       addEventListener: vi.fn(),
@@ -195,7 +202,7 @@ describe('AvatarScene', () => {
       vi.advanceTimersByTime(100);
     });
 
-    expect(mockEmit).toHaveBeenCalled();
+    expect(mockEmit).not.toHaveBeenCalled();
   });
 
   it('passes vrmUrl from preset to AvatarTile', async () => {
