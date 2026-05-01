@@ -1,6 +1,6 @@
 ---
 name: /feature-development
-description: 大機能追加の全体フロー — planner → tdd-guide → code-reviewer → security-reviewer を順次起動する。
+description: 大機能追加の全体フロー — planner → tdd-guide → code-reviewer → security-reviewer → commit & push を順次起動する。
 ---
 
 # /feature-development
