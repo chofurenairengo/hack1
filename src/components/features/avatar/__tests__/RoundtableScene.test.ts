@@ -3,8 +3,9 @@ import { describe, it, expect, vi } from 'vitest';
 vi.mock('@/hooks/useAvatarSync', () => ({
   useAvatarSync: vi.fn(),
 }));
-vi.mock('@react-three/drei', () => ({
-  OrbitControls: () => null,
+vi.mock('@react-three/fiber', () => ({
+  useFrame: vi.fn(),
+  useThree: vi.fn(),
 }));
 
 import { computeCircularLayout, resolvePreset, computeFpsCamera } from '../RoundtableScene';
@@ -40,12 +41,12 @@ describe('computeCircularLayout', () => {
     }
   });
 
-  it('sets rotY = pi + theta so each avatar faces the center', () => {
+  it('sets rotY = theta so each avatar faces the center', () => {
     const count = 4;
     const layout = computeCircularLayout(count, TABLE_RADIUS);
     layout.forEach((point, i) => {
       const theta = (2 * Math.PI * i) / count;
-      expect(point.rotY).toBeCloseTo(Math.PI + theta);
+      expect(point.rotY).toBeCloseTo(theta);
     });
   });
 

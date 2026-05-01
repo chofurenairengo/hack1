@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { OrbitControls } from '@react-three/drei';
+import { useMemo, useRef, useEffect } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import type { EventId, PairId, TableId } from '@/shared/types/ids';
 import type { TableMemberData } from '@/types/api';
 import type { AvatarPreset } from '@/domain/avatar/entities/avatar-preset.entity';
@@ -25,10 +25,13 @@ const ZERO_WEIGHTS: ExpressionPayload['weights'] = {
 };
 
 const DEFAULT_PRESET_KEY: AvatarPresetKey = 'sample_c_man';
-const TABLE_RADIUS = 1.5;
+const TABLE_RADIUS = 1.1;
 const EYE_HEIGHT = 1.5;
 const TABLE_CENTER_Y = 1.0;
 const VALID_MEMBER_COUNTS = [3, 4] as const;
+const LOOK_SENSITIVITY = 0.003;
+const MAX_PITCH = Math.PI / 6;
+const LOOK_TARGET: readonly [number, number, number] = [0, TABLE_CENTER_Y, 0];
 
 export type CircularPoint = Readonly<{ x: number; z: number; rotY: number }>;
 
@@ -38,7 +41,7 @@ export function computeCircularLayout(count: number, radius: number): ReadonlyAr
     return {
       x: radius * Math.sin(theta),
       z: radius * Math.cos(theta),
-      rotY: Math.PI + theta,
+      rotY: theta,
     };
   });
 }
@@ -62,6 +65,74 @@ export function computeFpsCamera(selfIndex: number, count: number, radius: numbe
   };
 }
 
+interface LookAroundControlsProps {
+  fixedPosition: readonly [number, number, number];
+}
+
+function LookAroundControls({ fixedPosition }: LookAroundControlsProps) {
+  const { camera, gl, invalidate } = useThree();
+  const yawRef = useRef(0);
+  const pitchRef = useRef(0);
+  const isDragging = useRef(false);
+  const lastX = useRef(0);
+  const lastY = useRef(0);
+
+  useEffect(() => {
+    yawRef.current = 0;
+    pitchRef.current = 0;
+  }, [fixedPosition]);
+
+  useEffect(() => {
+    const el = gl.domElement;
+
+    const onMouseDown = (e: MouseEvent) => {
+      isDragging.current = true;
+      lastX.current = e.clientX;
+      lastY.current = e.clientY;
+    };
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const dx = e.clientX - lastX.current;
+      const dy = e.clientY - lastY.current;
+      lastX.current = e.clientX;
+      lastY.current = e.clientY;
+      yawRef.current -= dx * LOOK_SENSITIVITY;
+      pitchRef.current = Math.max(
+        -MAX_PITCH,
+        Math.min(MAX_PITCH, pitchRef.current - dy * LOOK_SENSITIVITY),
+      );
+      invalidate();
+    };
+    const onMouseUp = () => {
+      isDragging.current = false;
+    };
+
+    el.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+
+    return () => {
+      el.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [gl.domElement, invalidate]);
+
+  useFrame(() => {
+    camera.position.set(fixedPosition[0], fixedPosition[1], fixedPosition[2]);
+    const baseDx = LOOK_TARGET[0] - fixedPosition[0];
+    const baseDz = LOOK_TARGET[2] - fixedPosition[2];
+    const baseYaw = Math.atan2(baseDx, baseDz);
+    const totalYaw = baseYaw + yawRef.current;
+    const lookX = fixedPosition[0] + Math.sin(totalYaw) * Math.cos(pitchRef.current);
+    const lookY = fixedPosition[1] + Math.sin(pitchRef.current);
+    const lookZ = fixedPosition[2] + Math.cos(totalYaw) * Math.cos(pitchRef.current);
+    camera.lookAt(lookX, lookY, lookZ);
+  });
+
+  return null;
+}
+
 interface RoundtableAvatarsProps {
   members: ReadonlyArray<TableMemberData>;
   expressions: Record<string, ExpressionPayload>;
@@ -73,13 +144,6 @@ function RoundtableAvatars({ members, expressions, radius, selfIndex }: Roundtab
   const layout = computeCircularLayout(members.length, radius);
   return (
     <>
-      <OrbitControls
-        target={[0, TABLE_CENTER_Y, 0]}
-        enableZoom={false}
-        enablePan={false}
-        maxPolarAngle={Math.PI * 0.65}
-        minPolarAngle={0.1}
-      />
       {members.map((member, i) => {
         if (i === selfIndex) return null;
         const point = layout[i];
@@ -114,20 +178,35 @@ export function RoundtableScene({
   const { expressions } = useAvatarSync(eventId, tableId as unknown as PairId);
   const memberCount = members.length;
 
+  const fpsCam = useMemo(
+    () =>
+      computeFpsCamera(
+        Math.min(selfIndex, Math.max(0, memberCount - 1)),
+        memberCount >= 3 ? memberCount : 4,
+        TABLE_RADIUS,
+      ),
+    [selfIndex, memberCount],
+  );
+
   if (!VALID_MEMBER_COUNTS.includes(memberCount as (typeof VALID_MEMBER_COUNTS)[number])) {
     return <div role="alert">ラウンドテーブルには 3〜4 名が必要です (現在: {memberCount} 名)</div>;
   }
 
-  const fpsCam = computeFpsCamera(selfIndex, memberCount, TABLE_RADIUS);
-
   return (
-    <AvatarCanvas camera={{ position: fpsCam.position, fov: 75 }} className={className}>
-      <RoundtableAvatars
-        members={members}
-        expressions={expressions}
-        radius={TABLE_RADIUS}
-        selfIndex={selfIndex}
-      />
-    </AvatarCanvas>
+    <div className={className}>
+      <AvatarCanvas
+        camera={{ position: fpsCam.position, fov: 50 }}
+        className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-400"
+        transparent
+      >
+        <RoundtableAvatars
+          members={members}
+          expressions={expressions}
+          radius={TABLE_RADIUS}
+          selfIndex={selfIndex}
+        />
+        <LookAroundControls fixedPosition={fpsCam.position} />
+      </AvatarCanvas>
+    </div>
   );
 }

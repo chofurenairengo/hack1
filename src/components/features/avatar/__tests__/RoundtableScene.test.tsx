@@ -6,7 +6,14 @@ import type { EventId, TableId } from '@/shared/types/ids';
 import type { ExpressionPayload } from '@/domain/avatar/value-objects/expression.payload';
 
 vi.mock('../AvatarCanvas', () => ({
-  AvatarCanvas: ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  AvatarCanvas: ({
+    children,
+    className,
+  }: {
+    children: React.ReactNode;
+    className?: string;
+    transparent?: boolean;
+  }) => (
     <div data-testid="avatar-canvas" className={className}>
       {children}
     </div>
@@ -19,8 +26,13 @@ vi.mock('../AvatarTile', () => ({
   ),
 }));
 
-vi.mock('@react-three/drei', () => ({
-  OrbitControls: () => null,
+vi.mock('@react-three/fiber', () => ({
+  useFrame: vi.fn(),
+  useThree: () => ({
+    camera: { position: { set: vi.fn() }, lookAt: vi.fn() },
+    gl: { domElement: { addEventListener: vi.fn(), removeEventListener: vi.fn() } },
+    invalidate: vi.fn(),
+  }),
 }));
 
 const mockExpressions: Record<string, ExpressionPayload> = {};
@@ -143,8 +155,8 @@ describe('RoundtableScene', () => {
   });
 
   describe('className prop', () => {
-    it('forwards className to AvatarCanvas', () => {
-      render(
+    it('forwards className to the outer container', () => {
+      const { container } = render(
         <RoundtableScene
           eventId={EVENT_ID}
           tableId={TABLE_ID}
@@ -152,8 +164,7 @@ describe('RoundtableScene', () => {
           className="h-full w-full"
         />,
       );
-      const canvas = screen.getByTestId('avatar-canvas');
-      expect(canvas.className).toContain('h-full');
+      expect(container.firstElementChild?.className).toContain('h-full');
     });
   });
 });
