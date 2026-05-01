@@ -1,3 +1,4 @@
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { EventId, PairId } from '@/shared/types/ids';
 import { channelName } from '@/infrastructure/realtime/channels';
 import { channelFactory } from '@/infrastructure/realtime/supabase-channel.factory';
@@ -24,6 +25,9 @@ const SUBSCRIBE_TIMEOUT_MS = 10_000;
 export class SignalingChannel {
   private readonly name: string;
   private readonly userId: string;
+  // channelFactory.get() は subscribe() で 1 回だけ呼び、unsubscribe() で 1 回 remove() する。
+  // send()/getPeers() で都度 get() を呼ぶと refCount が無限に増えてチャンネルがリークする。
+  private channel: RealtimeChannel | null = null;
 
   constructor(eventId: EventId, pairId: PairId, userId: string) {
     this.name = channelName.presenterSignal(eventId, pairId);
@@ -35,7 +39,10 @@ export class SignalingChannel {
   }
 
   async subscribe(onSignal: SignalHandler, onPeersChanged?: PeersChangedHandler): Promise<void> {
+    if (this.channel) return;
+
     const channel = channelFactory.get(this.name, this.channelOptions);
+    this.channel = channel;
 
     channel.on('broadcast', { event: 'signal' }, ({ payload }: { payload: unknown }) => {
       const msg = payload as SignalMessage;
@@ -78,18 +85,20 @@ export class SignalingChannel {
   }
 
   async send(msg: Omit<SignalMessage, 'from'>): Promise<void> {
-    const channel = channelFactory.get(this.name, this.channelOptions);
-    await channel.send({
+    if (!this.channel) {
+      throw new Error('SignalingChannel: send() called before subscribe()');
+    }
+    await this.channel.send({
       type: 'broadcast',
       event: 'signal',
       payload: { ...msg, from: this.userId } satisfies SignalMessage,
     });
   }
 
-  /** Presence から自分以外の参加者 userId を返す */
+  /** Presence から自分以外の参加者 userId を返す。subscribe 前は空配列。 */
   getPeers(): string[] {
-    const channel = channelFactory.get(this.name, this.channelOptions);
-    const state = channel.presenceState<{ userId: string }>();
+    if (!this.channel) return [];
+    const state = this.channel.presenceState<{ userId: string }>();
     return [
       ...new Set(
         Object.values(state)
@@ -101,6 +110,8 @@ export class SignalingChannel {
   }
 
   async unsubscribe(): Promise<void> {
+    if (!this.channel) return;
+    this.channel = null;
     await channelFactory.remove(this.name);
   }
 }

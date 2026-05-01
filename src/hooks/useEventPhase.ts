@@ -47,6 +47,7 @@ export function useEventPhase(
       if ('untrack' in channel) {
         void channel.untrack();
       }
+      void channelFactory.remove(name);
     };
   }, [eventId, presenceRole]);
 

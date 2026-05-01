@@ -10,6 +10,9 @@ export type ChannelOptions = {
 
 class SupabaseChannelFactory {
   private readonly channels = new Map<string, RealtimeChannel>();
+  // 同一名チャンネルへの consumer 数を追跡する。
+  // get() で +1、remove() で -1、0 で実際に supabase.removeChannel() を呼ぶ。
+  private readonly refCounts = new Map<string, number>();
   private _client: ReturnType<typeof createSupabaseBrowserClient> | null = null;
 
   private get client() {
@@ -22,35 +25,64 @@ class SupabaseChannelFactory {
   /**
    * チャンネルを取得または新規作成する。
    * 同一名のチャンネルが既に存在する場合はキャッシュを返す。
+   * 呼び出すたびに参照カウントをインクリメントするため、必ず `remove()` と 1:1 で対にすること。
    */
   get(name: string, options: ChannelOptions = {}): RealtimeChannel {
     const cached = this.channels.get(name);
-    if (cached) return cached;
+    if (cached) {
+      this.refCounts.set(name, (this.refCounts.get(name) ?? 0) + 1);
+      return cached;
+    }
 
     const channel = options.presence
       ? this.client.channel(name, { config: { presence: { key: options.presenceKey ?? name } } })
       : this.client.channel(name);
 
     this.channels.set(name, channel);
+    this.refCounts.set(name, 1);
     return channel;
   }
 
-  /** チャンネルの購読を解除してキャッシュから削除する */
+  /**
+   * 参照カウントをデクリメントする。
+   * 0 になったときだけ実際に `supabase.removeChannel()` を呼んでキャッシュから削除する。
+   *
+   * `removeChannel()` の await 完了後に Map をクリアする。失敗時は Map にエントリが
+   * 残るため、リーク追跡不能 (再試行/再 remove 不可) になることを防ぐ。
+   */
   async remove(name: string): Promise<void> {
     const channel = this.channels.get(name);
     if (!channel) return;
 
+    const next = (this.refCounts.get(name) ?? 0) - 1;
+    if (next > 0) {
+      this.refCounts.set(name, next);
+      return;
+    }
+
     await this.client.removeChannel(channel);
+    this.refCounts.delete(name);
     this.channels.delete(name);
   }
 
-  /** 全チャンネルを一括解除する (ページ離脱時に呼ぶ) */
+  /**
+   * 全チャンネルを参照カウントを無視して一括解除する (ページ離脱時に呼ぶ)。
+   * `removeChannel()` の await 完了後に Map をクリアする (失敗時のリーク追跡不能を防ぐ)。
+   */
   async removeAll(): Promise<void> {
-    await Promise.all([...this.channels.keys()].map((name) => this.remove(name)));
+    const entries = [...this.channels.values()];
+    await Promise.all(entries.map((channel) => this.client.removeChannel(channel)));
+    this.channels.clear();
+    this.refCounts.clear();
   }
 
   has(name: string): boolean {
     return this.channels.has(name);
+  }
+
+  /** テスト/デバッグ用。本番ロジックでの参照は避けること。 */
+  refCount(name: string): number {
+    return this.refCounts.get(name) ?? 0;
   }
 }
 

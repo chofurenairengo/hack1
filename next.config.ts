@@ -23,10 +23,18 @@ const nextConfig: NextConfig = {
     ];
     return [
       {
-        source: '/((?!events).*)',
+        source: '/((?!events|demo|test-webrtc).*)',
         headers: [
           ...commonSecurityHeaders,
           { key: 'Permissions-Policy', value: 'camera=(), microphone=()' },
+        ],
+      },
+      {
+        // Demo pages (lip-sync, avatar, etc.) need microphone for audio input.
+        source: '/demo/:path*',
+        headers: [
+          ...commonSecurityHeaders,
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(self)' },
         ],
       },
       {
