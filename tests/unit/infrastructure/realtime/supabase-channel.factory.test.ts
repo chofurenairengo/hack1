@@ -80,7 +80,7 @@ describe('SupabaseChannelFactory', () => {
     expect(factory.has('event:id:stamp2')).toBe(true);
   });
 
-  it('remove() calls removeChannel and clears the cache', async () => {
+  it('remove() calls removeChannel and clears the cache when refcount drops to 0', async () => {
     const fakeChannel = { id: 'ch' };
     mockChannel.mockReturnValue(fakeChannel);
 
@@ -98,10 +98,11 @@ describe('SupabaseChannelFactory', () => {
     expect(mockRemoveChannel).not.toHaveBeenCalled();
   });
 
-  it('removeAll() removes all cached channels', async () => {
+  it('removeAll() removes all cached channels regardless of refcount', async () => {
     mockChannel.mockReturnValue({});
     const factory = await importFactory();
 
+    factory.get('ch-a');
     factory.get('ch-a');
     factory.get('ch-b');
     await factory.removeAll();
@@ -109,5 +110,83 @@ describe('SupabaseChannelFactory', () => {
     expect(factory.has('ch-a')).toBe(false);
     expect(factory.has('ch-b')).toBe(false);
     expect(mockRemoveChannel).toHaveBeenCalledTimes(2);
+    expect(factory.refCount('ch-a')).toBe(0);
+  });
+
+  describe('refcount semantics', () => {
+    it('increments refcount on each get() call for the same name', async () => {
+      mockChannel.mockReturnValue({});
+      const factory = await importFactory();
+
+      factory.get('ch:shared');
+      factory.get('ch:shared');
+      factory.get('ch:shared');
+
+      expect(factory.refCount('ch:shared')).toBe(3);
+      expect(mockChannel).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the channel alive while refcount > 0', async () => {
+      const fakeChannel = { id: 'ch' };
+      mockChannel.mockReturnValue(fakeChannel);
+      const factory = await importFactory();
+
+      factory.get('ch:shared');
+      factory.get('ch:shared');
+      await factory.remove('ch:shared');
+
+      expect(mockRemoveChannel).not.toHaveBeenCalled();
+      expect(factory.has('ch:shared')).toBe(true);
+      expect(factory.refCount('ch:shared')).toBe(1);
+    });
+
+    it('removes the channel only when refcount drops to 0', async () => {
+      const fakeChannel = { id: 'ch' };
+      mockChannel.mockReturnValue(fakeChannel);
+      const factory = await importFactory();
+
+      factory.get('ch:shared');
+      factory.get('ch:shared');
+      await factory.remove('ch:shared');
+      await factory.remove('ch:shared');
+
+      expect(mockRemoveChannel).toHaveBeenCalledTimes(1);
+      expect(mockRemoveChannel).toHaveBeenCalledWith(fakeChannel);
+      expect(factory.has('ch:shared')).toBe(false);
+      expect(factory.refCount('ch:shared')).toBe(0);
+    });
+
+    it('does not over-decrement when remove() is called more than get()', async () => {
+      const fakeChannel = { id: 'ch' };
+      mockChannel.mockReturnValue(fakeChannel);
+      const factory = await importFactory();
+
+      factory.get('ch:once');
+      await factory.remove('ch:once');
+      await factory.remove('ch:once'); // extra remove
+
+      expect(mockRemoveChannel).toHaveBeenCalledTimes(1);
+      expect(factory.refCount('ch:once')).toBe(0);
+    });
+
+    it('returns the same channel instance after re-get following partial release', async () => {
+      const fakeChannel = { id: 'ch' };
+      mockChannel.mockReturnValue(fakeChannel);
+      const factory = await importFactory();
+
+      const a = factory.get('ch:shared');
+      factory.get('ch:shared');
+      await factory.remove('ch:shared');
+      const c = factory.get('ch:shared');
+
+      expect(c).toBe(a);
+      expect(factory.refCount('ch:shared')).toBe(2);
+      expect(mockChannel).toHaveBeenCalledTimes(1);
+    });
+
+    it('refCount() returns 0 for unknown channel names', async () => {
+      const factory = await importFactory();
+      expect(factory.refCount('nope')).toBe(0);
+    });
   });
 });

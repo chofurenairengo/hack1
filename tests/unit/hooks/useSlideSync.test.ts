@@ -20,8 +20,9 @@ const mocks = vi.hoisted(() => {
     subscribe,
     send,
   };
-  const channelFactoryMock = { get: vi.fn().mockReturnValue(channel) };
-  return { subscribe, send, channel, channelFactoryMock, handlerCapture };
+  const remove = vi.fn().mockResolvedValue(undefined);
+  const channelFactoryMock = { get: vi.fn().mockReturnValue(channel), remove };
+  return { subscribe, send, remove, channel, channelFactoryMock, handlerCapture };
 });
 
 vi.mock('@/infrastructure/realtime/supabase-channel.factory', () => ({
@@ -102,5 +103,20 @@ describe('useSlideSync', () => {
       event: 'slide-sync',
       payload,
     });
+  });
+
+  it('calls channelFactory.remove() on unmount to release the refcount', () => {
+    const { unmount } = renderHook(() => useSlideSync(eventId, pairId));
+    unmount();
+    expect(mocks.remove).toHaveBeenCalledWith('event:evt-1:slide-sync:pair-1');
+  });
+
+  it('calls channelFactory.remove() for old channel when pairId changes', () => {
+    const pairId2 = asPairId('pair-2');
+    const { rerender } = renderHook(({ pid }) => useSlideSync(eventId, pid), {
+      initialProps: { pid: pairId },
+    });
+    rerender({ pid: pairId2 });
+    expect(mocks.remove).toHaveBeenCalledWith('event:evt-1:slide-sync:pair-1');
   });
 });

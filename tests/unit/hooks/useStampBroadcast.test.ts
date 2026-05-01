@@ -20,8 +20,9 @@ const mocks = vi.hoisted(() => {
     subscribe,
     send,
   };
-  const channelFactoryMock = { get: vi.fn().mockReturnValue(channel) };
-  return { subscribe, send, channel, channelFactoryMock, handlerCapture };
+  const remove = vi.fn().mockResolvedValue(undefined);
+  const channelFactoryMock = { get: vi.fn().mockReturnValue(channel), remove };
+  return { subscribe, send, remove, channel, channelFactoryMock, handlerCapture };
 });
 
 vi.mock('@/infrastructure/realtime/supabase-channel.factory', () => ({
@@ -105,5 +106,20 @@ describe('useStampBroadcast', () => {
     expect(mocks.send).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'broadcast', event: 'stamp' }),
     );
+  });
+
+  it('calls channelFactory.remove() on unmount to release the refcount', () => {
+    const { unmount } = renderHook(() => useStampBroadcast(eventId));
+    unmount();
+    expect(mocks.remove).toHaveBeenCalledWith('event:evt-1:stamp');
+  });
+
+  it('calls channelFactory.remove() for old channel when eventId changes', () => {
+    const eventId2 = asEventId('evt-2');
+    const { rerender } = renderHook(({ id }) => useStampBroadcast(id), {
+      initialProps: { id: eventId },
+    });
+    rerender({ id: eventId2 });
+    expect(mocks.remove).toHaveBeenCalledWith('event:evt-1:stamp');
   });
 });
