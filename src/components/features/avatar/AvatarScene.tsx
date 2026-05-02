@@ -48,11 +48,21 @@ export function AvatarScene({
   const lastEmitRef = useRef<number>(0);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const [prefersReducedMotion] = useState(
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(
     () =>
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const [cameraError, setCameraError] = useState(false);
 
   const { permissionState, requestPermission } = useCameraPermission();
   const { mediapipeTargetFps, disableEffects } = useAvatarPerf();
@@ -74,12 +84,15 @@ export function AvatarScene({
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
+        setCameraError(false);
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (active) setCameraError(true);
+      });
 
     return () => {
       active = false;
@@ -136,6 +149,22 @@ export function AvatarScene({
   }
 
   if (permissionState === 'denied' || permissionState === 'unsupported') {
+    return (
+      <div className="relative">
+        <AvatarCanvas disableEffects>
+          <AvatarTile vrmUrl={preset.vrmUrl} weights={DEFAULT_WEIGHTS} />
+        </AvatarCanvas>
+        <div
+          role="status"
+          className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600"
+        >
+          音声のみで参加中
+        </div>
+      </div>
+    );
+  }
+
+  if (cameraError) {
     return (
       <div className="relative">
         <AvatarCanvas disableEffects>
