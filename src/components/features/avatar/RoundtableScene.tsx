@@ -41,7 +41,7 @@ export function computeCircularLayout(count: number, radius: number): ReadonlyAr
     return {
       x: radius * Math.sin(theta),
       z: radius * Math.cos(theta),
-      rotY: theta + Math.PI,
+      rotY: theta,
     };
   });
 }

@@ -41,26 +41,26 @@ describe('computeCircularLayout', () => {
     }
   });
 
-  it('sets rotY = theta + PI so each avatar faces the center (VRM +Z forward)', () => {
+  it('sets rotY = theta so each avatar faces the center (VRM -Z forward)', () => {
     const count = 4;
     const layout = computeCircularLayout(count, TABLE_RADIUS);
     layout.forEach((point, i) => {
       const theta = (2 * Math.PI * i) / count;
-      expect(point.rotY).toBeCloseTo(theta + Math.PI);
+      expect(point.rotY).toBeCloseTo(theta);
     });
   });
 
-  it('rotated forward vector points toward the table center', () => {
+  it('-Z front vector points toward the table center (VRM -Z forward)', () => {
     const count = 4;
     const layout = computeCircularLayout(count, TABLE_RADIUS);
     layout.forEach((point) => {
-      const forwardX = Math.sin(point.rotY);
-      const forwardZ = Math.cos(point.rotY);
+      const frontX = -Math.sin(point.rotY);
+      const frontZ = -Math.cos(point.rotY);
       const toCenterX = -point.x;
       const toCenterZ = -point.z;
       const len = Math.sqrt(toCenterX ** 2 + toCenterZ ** 2);
-      expect(forwardX).toBeCloseTo(toCenterX / len);
-      expect(forwardZ).toBeCloseTo(toCenterZ / len);
+      expect(frontX).toBeCloseTo(toCenterX / len);
+      expect(frontZ).toBeCloseTo(toCenterZ / len);
     });
   });
 
