@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { EventId, PairId, UserId } from '@/shared/types/ids';
 import { useAvatarSync } from '@/hooks/useAvatarSync';
 import { getPresetByKey, type AvatarPresetKey } from '@/infrastructure/vrm/preset-registry';
@@ -43,6 +43,20 @@ export function PresenterScene({
 }: PresenterSceneProps) {
   const { expressions } = useAvatarSync(eventId, pairId);
 
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   const presenterPreset = getPresetByKey(presenterPresetKey);
   const presenteePreset = getPresetByKey(presenteePresetKey);
 
@@ -57,7 +71,11 @@ export function PresenterScene({
     <div className="grid h-full w-full grid-cols-[1fr_2fr_1fr] gap-4">
       <section role="region" aria-label="紹介者アバター" className="relative h-full">
         <AvatarCanvas className="h-full w-full">
-          <AvatarTile vrmUrl={presenterPreset.vrmUrl} weights={presenterWeights} />
+          <AvatarTile
+            vrmUrl={presenterPreset.vrmUrl}
+            weights={presenterWeights}
+            reducedMotion={prefersReducedMotion}
+          />
         </AvatarCanvas>
       </section>
 
@@ -71,7 +89,11 @@ export function PresenterScene({
 
       <section role="region" aria-label="被紹介者アバター" className="relative h-full">
         <AvatarCanvas className="h-full w-full">
-          <AvatarTile vrmUrl={presenteePreset.vrmUrl} weights={presenteeWeights} />
+          <AvatarTile
+            vrmUrl={presenteePreset.vrmUrl}
+            weights={presenteeWeights}
+            reducedMotion={prefersReducedMotion}
+          />
         </AvatarCanvas>
       </section>
     </div>

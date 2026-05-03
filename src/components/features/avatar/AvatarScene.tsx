@@ -142,7 +142,11 @@ export function AvatarScene({
           カメラを許可する
         </button>
         <AvatarCanvas disableEffects>
-          <AvatarTile vrmUrl={preset.vrmUrl} weights={DEFAULT_WEIGHTS} />
+          <AvatarTile
+            vrmUrl={preset.vrmUrl}
+            weights={DEFAULT_WEIGHTS}
+            reducedMotion={prefersReducedMotion}
+          />
         </AvatarCanvas>
       </div>
     );
@@ -152,7 +156,11 @@ export function AvatarScene({
     return (
       <div className="relative">
         <AvatarCanvas disableEffects>
-          <AvatarTile vrmUrl={preset.vrmUrl} weights={DEFAULT_WEIGHTS} />
+          <AvatarTile
+            vrmUrl={preset.vrmUrl}
+            weights={DEFAULT_WEIGHTS}
+            reducedMotion={prefersReducedMotion}
+          />
         </AvatarCanvas>
         <div
           role="status"
@@ -168,7 +176,11 @@ export function AvatarScene({
     return (
       <div className="relative">
         <AvatarCanvas disableEffects>
-          <AvatarTile vrmUrl={preset.vrmUrl} weights={DEFAULT_WEIGHTS} />
+          <AvatarTile
+            vrmUrl={preset.vrmUrl}
+            weights={DEFAULT_WEIGHTS}
+            reducedMotion={prefersReducedMotion}
+          />
         </AvatarCanvas>
         <div
           role="status"
@@ -197,7 +209,11 @@ export function AvatarScene({
     <>
       <video ref={videoRef} autoPlay playsInline muted style={{ display: 'none' }} />
       <AvatarCanvas disableEffects={disableEffects}>
-        <AvatarTile vrmUrl={preset.vrmUrl} weights={selfWeights} />
+        <AvatarTile
+          vrmUrl={preset.vrmUrl}
+          weights={selfWeights}
+          reducedMotion={prefersReducedMotion}
+        />
       </AvatarCanvas>
     </>
   );

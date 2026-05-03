@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { EventId, TableId } from '@/shared/types/ids';
 import type { TableMemberData } from '@/types/api';
@@ -138,9 +138,16 @@ interface RoundtableAvatarsProps {
   expressions: Record<string, ExpressionPayload>;
   radius: number;
   selfIndex: number;
+  reducedMotion: boolean;
 }
 
-function RoundtableAvatars({ members, expressions, radius, selfIndex }: RoundtableAvatarsProps) {
+function RoundtableAvatars({
+  members,
+  expressions,
+  radius,
+  selfIndex,
+  reducedMotion,
+}: RoundtableAvatarsProps) {
   const layout = computeCircularLayout(members.length, radius);
   return (
     <>
@@ -152,7 +159,7 @@ function RoundtableAvatars({ members, expressions, radius, selfIndex }: Roundtab
         const weights = expressions[member.userId]?.weights ?? ZERO_WEIGHTS;
         return (
           <group key={member.userId} position={[point.x, 0, point.z]} rotation={[0, point.rotY, 0]}>
-            <AvatarTile vrmUrl={preset.vrmUrl} weights={weights} />
+            <AvatarTile vrmUrl={preset.vrmUrl} weights={weights} reducedMotion={reducedMotion} />
           </group>
         );
       })}
@@ -177,6 +184,20 @@ export function RoundtableScene({
 }: RoundtableSceneProps) {
   const { expressions } = useTableAvatarSync(eventId, tableId);
   const memberCount = members.length;
+
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const fpsCam = useMemo(
     () =>
@@ -204,6 +225,7 @@ export function RoundtableScene({
           expressions={expressions}
           radius={TABLE_RADIUS}
           selfIndex={selfIndex}
+          reducedMotion={prefersReducedMotion}
         />
         <LookAroundControls fixedPosition={fpsCam.position} />
       </AvatarCanvas>
