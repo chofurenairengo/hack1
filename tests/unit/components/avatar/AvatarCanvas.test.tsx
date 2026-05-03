@@ -32,9 +32,9 @@ describe('AvatarCanvas', () => {
     expect(document.querySelector('.my-class')).toBeInTheDocument();
   });
 
-  it('passes frameloop="demand" to Canvas', () => {
+  it('passes frameloop="always" to Canvas', () => {
     render(<AvatarCanvas />);
     const canvas = screen.getByTestId('r3f-canvas');
-    expect(canvas).toHaveAttribute('frameloop', 'demand');
+    expect(canvas).toHaveAttribute('frameloop', 'always');
   });
 });

@@ -2,20 +2,28 @@ import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { VRM } from '@pixiv/three-vrm';
 import { useVRM } from '@/hooks/useVRM';
+import { useVRMAnimationPlayer } from '@/hooks/useVRMAnimationPlayer';
 import type { ExpressionPayload } from '@/domain/avatar/value-objects/expression.payload';
 
 interface AvatarTileProps {
   vrmUrl: string;
   weights: ExpressionPayload['weights'];
+  reducedMotion?: boolean;
   onLoad?: (vrm: VRM) => void;
   onError?: (msg: string) => void;
 }
 
-export function AvatarTile({ vrmUrl, weights, onLoad, onError }: AvatarTileProps) {
+export function AvatarTile({ vrmUrl, weights, reducedMotion, onLoad, onError }: AvatarTileProps) {
   const { vrm, error } = useVRM(vrmUrl);
   const prevWeightsRef = useRef<ExpressionPayload['weights'] | null>(null);
   const onLoadRef = useRef(onLoad);
   const onErrorRef = useRef(onError);
+
+  useVRMAnimationPlayer({
+    vrm: vrm ?? null,
+    talkingWeight: weights.aa,
+    reducedMotion: reducedMotion ?? false,
+  });
 
   useEffect(() => {
     onLoadRef.current = onLoad;

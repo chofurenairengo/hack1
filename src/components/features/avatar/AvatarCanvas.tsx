@@ -30,7 +30,7 @@ export function AvatarCanvas({
   return (
     <div className={className}>
       <Canvas
-        frameloop="demand"
+        frameloop="always"
         camera={cameraConfig}
         dpr={disableEffects ? [1, 1] : [1, 2]}
         gl={transparent ? { alpha: true } : undefined}

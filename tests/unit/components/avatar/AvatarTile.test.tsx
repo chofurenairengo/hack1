@@ -8,6 +8,7 @@ const mockUseFrame = vi.hoisted(() => vi.fn());
 const mockInvalidate = vi.hoisted(() => vi.fn());
 
 vi.mock('@/hooks/useVRM', () => ({ useVRM: mockUseVRM }));
+vi.mock('@/hooks/useVRMAnimationPlayer', () => ({ useVRMAnimationPlayer: vi.fn() }));
 
 vi.mock('@react-three/fiber', () => ({
   useFrame: mockUseFrame,
